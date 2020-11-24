@@ -22,6 +22,8 @@ def get_sp2num(genes):
 
 def issingle(genes, nsp):
     species = get_sp2num(genes)
+    print(species)
+    print(nsp)
     toprint = False
     if len(species) >= nsp:
         print('yesssssssssss')
