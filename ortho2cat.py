@@ -112,7 +112,7 @@ def get_concat(orthologs, proteins, path):
         if tag == False:
             genes = get_largest(genes, proteins)
         for g in genes:
-            GM.print(g.split('-')[-1],''.join(proteins[g]), outfile)
+            GM.print_sequence(g.split('-')[-1],''.join(proteins[g]), outfile)
         outfile.close()
         
 
@@ -129,7 +129,7 @@ pepFiles = glob.glob(args.pepFile+'/*.fa')
 proteins = get_proteins(pepFiles)
 
 orthologs = get_orthogroups2single(inFile)
-path = './orthogroup_aligment/single_copy/'
+path = './orthogroups_aligment/single_copy/'
 gmo.create_folder(path)
 get_concat(orthologs, proteins, path)
 
