@@ -47,7 +47,7 @@ def islow(genes):
     return toprint
     
 
-def get_orthogroups2single(inFile):
+def get_orthogroups2single(orthoFile):
     print('loading single copy orthogroups...')
     orthologs = set([])
     for line in open(orthoFile): 
@@ -61,7 +61,7 @@ def get_orthogroups2single(inFile):
     return orthologs
         
         
-def get_orthogroups2low(inFile, orthologs):
+def get_orthogroups2low(orthoFile, orthologs):
     print('loading low copy orthogroups...')
     orthologs = set([])
     for line in open(orthoFile): 
@@ -133,8 +133,8 @@ path = './orthogroup_aligment/single_copy/'
 gmo.create_folder(path)
 get_concat(orthologs, proteins, path)
 
-if len(single_ortho) < 20:
-    print('few single copy orthologs', len(single_ortho))
+if len(orthologs) < 20:
+    print('few single copy orthologs', len(orthologs))
     orthologs = get_orthogroups2low(inFile)
     path = './orthogroup_aligment/low_copy/'
     gmo.create_folder(path)
