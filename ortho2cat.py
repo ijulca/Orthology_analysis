@@ -49,7 +49,7 @@ def islow(genes):
 
 def get_orthogroups2single(orthoFile):
     print('loading single copy orthogroups...')
-    orthologs = set([])
+    orthologs = {}
     for line in open(orthoFile): 
         line = line.strip() 
         data = line.split(' ')
