@@ -22,8 +22,6 @@ def get_sp2num(genes):
 
 def issingle(genes, nsp):
     species = get_sp2num(genes)
-    print(species)
-    print(nsp)
     toprint = False
     if len(species) >= nsp:
         print('yesssssssssss')
@@ -108,14 +106,14 @@ def get_largest(genes, proteins):
     return new_genes
     
 
-def get_concat(orthologs, proteins, path):    
+def get_concat(orthologs, proteins, path, num, gaps):    
     for o in orthologs:
         outpath = path + o+'/'
         outname = outpath + o +'.fasta'
         gmo.create_folder(outpath)
         outfile = open(outname, 'w')
         genes = orthologs[o]
-        tag = issingle(genes)
+        tag = issingle(genes, num-gaps)
         if tag == False:
             genes = get_largest(genes, proteins)
         for g in genes:
@@ -149,7 +147,7 @@ if os.path.exists(path):
     print('single copy orthologs fasta already exists...')
 else:
     gmo.create_folder(path)
-    get_concat(orthologs, proteins, path)
+    get_concat(orthologs, proteins, path, len(pepFiles), gaps)
 
 if len(orthologs) < 20:
     if extra == True:
@@ -157,7 +155,7 @@ if len(orthologs) < 20:
         orthologs = get_orthogroups2low(inFile, orthologs, len(pepFiles), gaps)
         path = './orthogroup_aligment/low_copy/'
         gmo.create_folder(path)
-        get_concat(orthologs, proteins, path)
+        get_concat(orthologs, proteins, path, len(pepFiles), gaps)
     else:
         print('Warning, less than 20 single copy genes:', len(orthologs))
         print('Try --gaps or --extra options. Is better to try first --gaps option if was not used before')
