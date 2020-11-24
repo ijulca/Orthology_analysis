@@ -133,6 +133,7 @@ pepFiles = glob.glob(args.pepFile+'/*.fa')
 gaps = float(args.gaps)
 extra = args.extra
 
+print('analysing '+str(len(pepFiles))+' species...')
 proteins = get_proteins(pepFiles)
 
 path = './orthogroups_aligment/'
@@ -154,7 +155,7 @@ if len(orthologs) < 20:
         gmo.create_folder(path)
         get_concat(orthologs, proteins, path)
     else:
-        print('Warning, less than 20 single copy genes', len(orthologs))
+        print('Warning, less than 20 single copy genes:', len(orthologs))
         print('Try --gaps or --extra options. Is better to try first --gaps option if was not used before')
 
 print('End...')
