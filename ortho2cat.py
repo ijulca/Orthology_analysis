@@ -6,9 +6,10 @@ Created on Tue Nov 24 14:22:38 2020
 @author: ijulca
 """
 import argparse
-import sys, glob
-sys.path.append("/home/ijulca/Programs/modules_py/")
+import sys, glob, os
+sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
 import genome_modules as GM
+import general_modules as gmo
 
 def get_sp2num(genes):
     species = {}
@@ -55,7 +56,8 @@ def get_orthogroups2single(inFile):
         genes = data[1:]
         single = issingle(genes)
         if single == True:
-            orthologs.add(data[0])
+            name = data[0].replace(':','')
+            orthologs[name] = genes
     return orthologs
         
         
@@ -65,11 +67,12 @@ def get_orthogroups2low(inFile, orthologs):
     for line in open(orthoFile): 
         line = line.strip() 
         data = line.split(' ')
-        if data[0] not in orthologs:
+        name = data[0].replace(':','')
+        if name not in orthologs:
             genes = data[1:]
             tag = islow(genes)
             if tag == True:
-                orthologs.add(data[0])
+                orthologs[name] = genes
     return orthologs
 
 def get_proteins(files):
@@ -79,16 +82,39 @@ def get_proteins(files):
         prot.update(seq)
     return prot
 
-def create_folder(path):
-    try:
-        os.makedirs('my_folder')
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+def get_largest(genes, proteins):
+    species = {}
+    for g in genes:
+        sp = g.split('-')[-1]
+        if sp not in species:
+            species[sp] = []
+        species[sp].append(g+'++'+str(len(proteins[g])))
+    new_genes = []
+    for sp in species:
+        if len(species[sp]) >1:
+            pep = sorted(species[sp], key=lambda x:int(x.split('++')[1]))
+            new_genes.append(pep[-1])
+        else:
+            new_genes.append(species[sp][0])
+    if len(new_genes) != len(species.keys()):
+        print('ERROR selecting duplicates...')
+    return new_genes
+    
 
-def get_concat(orthologs, proteins):
-    
-    
+def get_concat(orthologs, proteins, path):    
+    for o in orthologs:
+        outpath = path + o+'/'
+        outname = outpath + o +'.fasta'
+        gmo.create_folder(outpath)
+        outfile = open(outname, 'w')
+        genes = orthologs[o]
+        tag = issingle(genes)
+        if tag == False:
+            genes = get_largest(genes, proteins)
+        for g in genes:
+            GM.print(g.split('-')[-1],''.join(proteins[g]), outfile)
+        outfile.close()
+        
 
 
 ### main
@@ -103,7 +129,15 @@ pepFiles = glob.glob(args.pepFile+'/*.fa')
 proteins = get_proteins(pepFiles)
 
 orthologs = get_orthogroups2single(inFile)
+path = './orthogroup_aligment/single_copy/'
+gmo.create_folder(path)
+get_concat(orthologs, proteins, path)
 
 if len(single_ortho) < 20:
     print('few single copy orthologs', len(single_ortho))
     orthologs = get_orthogroups2low(inFile)
+    path = './orthogroup_aligment/low_copy/'
+    gmo.create_folder(path)
+    get_concat(orthologs, proteins, path)
+
+print('End...')
