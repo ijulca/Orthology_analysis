@@ -154,7 +154,7 @@ if len(orthologs) < 20:
         gmo.create_folder(path)
         get_concat(orthologs, proteins, path)
     else:
-        print('Warning, less than 20 single copy genes')
+        print('Warning, less than 20 single copy genes', len(orthologs))
         print('Try --gaps or --extra options. Is better to try first --gaps option if was not used before')
 
 print('End...')
