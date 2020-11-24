@@ -134,7 +134,7 @@ args = parser.parse_args()
 
 inFile = args.inFile
 pepFiles = glob.glob(args.pepFile+'/*.fa')
-gaps = float(args.gaps)
+gaps = int(args.gaps)
 extra = args.extra
 
 print('analysing '+str(len(pepFiles))+' species...')
@@ -143,7 +143,7 @@ proteins = get_proteins(pepFiles)
 path = './orthogroups_aligment/'
 gmo.create_folder(path)
 
-orthologs = get_orthogroups2single(inFile, len(proteins), gaps)
+orthologs = get_orthogroups2single(inFile, len(pepFiles), gaps)
 path = './orthogroups_aligment/single_copy/'
 if os.path.exists(path):
     print('single copy orthologs fasta already exists...')
@@ -154,7 +154,7 @@ else:
 if len(orthologs) < 20:
     if extra == True:
         print('few single copy orthologs', len(orthologs))
-        orthologs = get_orthogroups2low(inFile)
+        orthologs = get_orthogroups2low(inFile, orthologs, len(pepFiles), gaps)
         path = './orthogroup_aligment/low_copy/'
         gmo.create_folder(path)
         get_concat(orthologs, proteins, path)
