@@ -59,6 +59,7 @@ def get_orthogroups2single(orthoFile, num, gaps):
         genes = data[1:]
         single = issingle(genes, nsp)
         if single == True:
+            print(data[0])
             name = data[0].replace(':','')
             orthologs[name] = genes
     return orthologs
