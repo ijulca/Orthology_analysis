@@ -107,7 +107,7 @@ def get_largest(genes, proteins):
 def get_concat(orthologs, proteins, path, num, gaps):    
     for o in orthologs:
         outpath = path + o+'/'
-        outname = outpath + o +'.fasta'
+        outname = outpath + o +'.seqs'
         gmo.create_folder(outpath)
         outfile = open(outname, 'w')
         genes = orthologs[o]
