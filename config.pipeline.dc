@@ -118,7 +118,7 @@ kalign_params       parameter      -f fasta
 # prank_params        parameter      +F
 
 # t_coffee            binary
-# t_coffee_params     parameter      -n_core 1 -output fasta -quiet -setenv MAX_N_PID_4_TCOFFEE=1000000
+# t_coffee_params     parameter      -n_core 1 -output fasta -setenv MAX_N_PID_4_TCOFFEE=1000000 -quiet
 
 ##  We used an special T-Coffee flavor to generate the meta-alignment
 m_coffee            binary         t_coffee
