@@ -115,7 +115,7 @@ def get_concat(orthologs, proteins, path, num, gaps):
         if tag == False:
             genes = get_largest(genes, proteins)
         for g in genes:
-            GM.print_sequence(g.split('-')[-1],''.join(proteins[g]), outfile)
+            GM.print_sequence(g,''.join(proteins[g]), outfile)
         outfile.close()
         
 
