@@ -47,26 +47,43 @@ def get_taxaRanks(taxa):
             descendants = ncbi.get_descendant_taxa(taxOr.split('-')[0], intermediate_nodes=True)
             families = get_taxaGroup(descendants, 'family')
             taxonRanks[taxCl][taxOr] = {x:set([]) for x in families}
+    print('Ranks loaded...')
     return taxonRanks
 
 def getRank_lineage(taxaid,taxonRanks):
     lineage = ncbi.get_lineage(taxaid)
+    ranks = ncbi.get_rank(lineage)
     lineage_names = ncbi.get_taxid_translator(lineage)
-    keys = [y+'-'+str(x) for x,y in lineage_names.items()]
-    kc = [x for x in keys if x in taxonRanks]
-    if len(kc) == 1:
-        kc = kc[0]
-        ko = [x for x in keys if x in taxonRanks[kc]]
-        kf = [x for x in keys if x in taxonRanks[kc][ko]]
-    else:
-        print('Error', taxaid)
+    kc,ko,kf = 'no','no','no'
+    for num,rank in ranks.items():
+        if rank == 'class':
+            kc = lineage_names[num]+'-'+str(num)
+        elif rank == 'order':
+            ko = lineage_names[num]+'-'+str(num)
+        elif rank == 'family':
+            kf = lineage_names[num]+'-'+str(num)
     return kc,ko,kf  
 
 def count_ranks(inFile, taxonRanks):
     tax_ids = set(gmo.load_list(inFile, sep='\t', remove='taxid'))
     for taxa in tax_ids:
         kc,ko,kf = getRank_lineage(taxa,taxonRanks)
-        taxonRanks[kc][ko][kf].add(taxa)
+        if kc != 'no':
+            if ko != 'no':
+                if kf != 'no':
+                    taxonRanks[kc][ko][kf].add(taxa)
+                else:
+                    if 'NoFamily' not in taxonRanks[kc][ko]:
+                        taxonRanks[kc][ko]['NoFamily'] = set([])
+                    taxonRanks[kc][ko]['NoFamily'].add(taxa)
+            else:
+                if 'NoOrder' not in taxonRanks[kc]:
+                    taxonRanks[kc]['NoOrder'] = {'NoFamily': set([])}
+                taxonRanks[kc]['NoOrder']['NoFamily'].add(taxa)
+        else:
+            if 'NoClass' not in taxonRanks:
+                taxonRanks['NoClass'] = {'NoOrder':{'NoFamily':set([])}}
+            taxonRanks['NoClass']['NoOrder']['NoFamily'].add(taxa)
     return taxonRanks
 
 def print_taxa_numbers(taxonRanks,outname):
@@ -100,4 +117,3 @@ taxonRanks = count_ranks(inFile, taxonRanks)
     
 print_taxa_numbers(taxonRanks, outname)
 print('End...')
-
