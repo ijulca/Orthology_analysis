@@ -20,7 +20,7 @@ import general_modules as gmo
     rm -r /home/ijulca/.etetoolkit/ """
     
 ncbi = NCBITaxa()
-ncbi.update_taxonomy_database()
+#ncbi.update_taxonomy_database()
 
 ###
 
