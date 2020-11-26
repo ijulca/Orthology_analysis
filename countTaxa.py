@@ -53,9 +53,13 @@ def getRank_lineage(taxaid,taxonRanks):
     lineage = ncbi.get_lineage(taxaid)
     lineage_names = ncbi.get_taxid_translator(lineage)
     keys = [y+'-'+str(x) for x,y in lineage_names.items()]
-    kc = [x for x in keys if x in taxonRanks][0]
-    ko = [x for x in keys if x in taxonRanks[kc]][0]
-    kf = [x for x in keys if x in taxonRanks[kc][ko]][0]
+    kc = [x for x in keys if x in taxonRanks]
+    if len(kc) == 1:
+        kc = kc[0]
+        ko = [x for x in keys if x in taxonRanks[kc]]
+        kf = [x for x in keys if x in taxonRanks[kc][ko]]
+    else:
+        print('Error', taxaid)
     return kc,ko,kf  
 
 def count_ranks(inFile, taxonRanks):
