@@ -85,6 +85,12 @@ def get_proteins(files):
         prot.update(seq)
     return prot
 
+def remove_stopCodon(seqs):
+    new_seqs = {}
+    for s in seqs:
+        new_seqs[s] = ''.join(seqs[s]).replace('*','')
+    return new_seqs
+
 def get_largest(genes, proteins):
     species = {}
     for g in genes:
@@ -135,6 +141,7 @@ extra = args.extra
 
 print('analysing '+str(len(pepFiles))+' species...')
 proteins = get_proteins(pepFiles)
+proteins = remove_stopCodon(proteins)
 
 path = './orthogroups_aligment/'
 gmo.create_folder(path)
