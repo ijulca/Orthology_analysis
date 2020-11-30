@@ -61,7 +61,7 @@ args = parser.parse_args()
 
 path = args.path
 d = args.delimiter
-num = int(args.number)
+num = int(float(args.number))
 outname = args.outFile
 
 files = glob.glob(path+'/*')
