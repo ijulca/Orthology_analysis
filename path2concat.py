@@ -34,6 +34,14 @@ def load_seq_sp(files, delimiter, pos):
         seqs[family] = genes
     return seqs,species
 
+def get_lenAlg(seqs):
+    alg = [len(seqs[s]) for s in seqs]
+    if len(set(alg)) == 1:
+        nalg = alg[0]
+    else:
+        print('ERROR... aligment')
+    return nalg
+
 def concat_genes(files,delimiter,pos,outname):
     seqs,species = load_seq_sp(files, delimiter, pos)
     print('concatenation of ', len(seqs),' genes and ', len(species), ' species...')
@@ -41,10 +49,15 @@ def concat_genes(files,delimiter,pos,outname):
     print(species)
     concat = {}
     for g in seqs:
+        nalg = get_lenAlg(seqs[g])
         for s in species:
             if s not in concat:
                 concat[s] = []
-            concat[s] += seqs[g][s]
+            if s in seqs[g]:
+                concat[s] += seqs[g][s]
+            else:
+                concat[s] += '-'*nalg
+                
     outfile = open(outname, 'w')
     for sp in concat:
         GM.print_sequence(sp,''.join(concat[sp]),outfile)
