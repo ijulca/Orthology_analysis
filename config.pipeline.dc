@@ -122,7 +122,7 @@ kalign_params       parameter      -f fasta
 
 ##  We used an special T-Coffee flavor to generate the meta-alignment
 m_coffee            binary         t_coffee
-m_coffee_params     parameter      -n_core 1 -output fasta -quiet -setenv MAX_N_PID_4_TCOFFEE=1000000
+m_coffee_params     parameter      -n_core 1 -output fasta -quiet -setenv MAX_N_PID_4_TCOFFEE=5000000
 
 ## Alignment trimming program
 ## We currently only support trimAl as alignment trimming program. It implements
