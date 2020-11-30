@@ -141,7 +141,7 @@ path = './orthogroups_aligment/'
 gmo.create_folder(path)
 
 orthologs = get_orthogroups2single(inFile, len(pepFiles), gaps)
-path = './orthogroups_aligment/single_copy/'
+path = './orthogroups_aligment/single_copy_'+str(gaps) +'/'
 if os.path.exists(path):
     print('single copy orthologs fasta already exists...')
 else:
