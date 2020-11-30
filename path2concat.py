@@ -13,6 +13,7 @@ import genome_modules as GM
 
 def load_seq_sp(files, delimiter, pos):
     seqs = {}
+    species = set([])
     for f in files:
         family = f.split('/')[-1].split('.')[0]
         genes = {}
@@ -26,34 +27,44 @@ def load_seq_sp(files, delimiter, pos):
                     genes[sp] = []
                 else:
                     print('ERROR...', 'duplicated genes for', sp)
+                species.add(sp)
             else:
                 for b in line:
                     genes[sp].append(b)
         seqs[family] = genes
-    return seqs
-
-def get_species(seqs):
-    species = set([])
-    for s in seqs:
-        for n in seqs[s]:
-            species.add(n)
-    return species
+    return seqs,species
 
 def concat_genes(files,delimiter,pos,outname):
-    seqs = load_seq_sp(files, delimiter, pos)
-    species = get_species(seqs)
-    print('')
-    
-    
-
-    
-
+    seqs,species = load_seq_sp(files, delimiter, pos)
+    print('concatenation of ', len(seqs),' genes and ', len(species), ' species...')
+    species =list(species)
+    print(species)
+    concat = {}
+    for g in seqs:
+        for s in species:
+            if s not in concat:
+                concat[s] = []
+            concat[s] += seqs[g][s]
+    outfile = open(outname, 'w')
+    for sp in concat:
+        GM.print_sequence(sp,''.join(concat[sp]),outfile)
+    outfile.close()
+            
 
 ### main
 parser = argparse.ArgumentParser(description="get the concatenation of aligned genes")
 parser.add_argument("-p", "--path", dest="path", required=True, help="path to the aligned genes in fasta format")
+parser.add_argument("-d", "--delimiter", dest="delimiter", default='-', help="delimiter to get the name. Default='-'")
+parser.add_argument("-n", "--number", dest="number", default='-', help="position number of the species name starting from 0")
+parser.add_argument("-o", "--outFile", dest="outFile", required=True, help="outfile name")
 args = parser.parse_args()
 
 path = args.path
+d = args.delimiter
+num = int(args.num)
+outname = args.outFile
 
-genes = glob.glob(path+'/*')
+files = glob.glob(path+'/*')
+
+concat_genes(files,d,num,outname)
+print('End...')
