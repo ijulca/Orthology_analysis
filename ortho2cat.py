@@ -26,11 +26,11 @@ def issingle(genes, nsp):
     if len(species) >= nsp:
         i = 0
         for s in species:
-            if species[s] == 1:
+            if species[s] > 1:
                 i+=1
-        if i >= nsp:
+        if i == 0:
             toprint = True
-    return toprint, species
+    return toprint
 
 def islow(genes, nsp):
     species = get_sp2num(genes)
@@ -56,11 +56,8 @@ def get_orthogroups2single(orthoFile, num, gaps):
     for line in open(orthoFile): 
         line = line.strip() 
         data = line.split(' ')
-        genes = data[1:]
-        
-        single,species = issingle(genes, nsp)
-        if data[0] == 'OG0001378:':
-            print(species)
+        genes = data[1:]        
+        single = issingle(genes, nsp)
         if single == True:
             name = data[0].replace(':','')
             orthologs[name] = genes
