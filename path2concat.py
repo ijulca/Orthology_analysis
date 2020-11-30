@@ -55,7 +55,7 @@ def concat_genes(files,delimiter,pos,outname):
 parser = argparse.ArgumentParser(description="get the concatenation of aligned genes")
 parser.add_argument("-p", "--path", dest="path", required=True, help="path to the aligned genes in fasta format")
 parser.add_argument("-d", "--delimiter", dest="delimiter", default='-', help="delimiter to get the name. Default='-'")
-parser.add_argument("-n", "--number", dest="number", default='-', help="position number of the species name starting from 0")
+parser.add_argument("-n", "--number", dest="number", default='-1', help="position number of the species name starting from 0. Defalut -1")
 parser.add_argument("-o", "--outFile", dest="outFile", required=True, help="outfile name")
 args = parser.parse_args()
 
