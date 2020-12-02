@@ -38,11 +38,11 @@ def islow(genes, nsp):
     if len(species) >= nsp:
         i,j=0,0
         for s in species:
-            if species[s] == 1:
+            if species[s] > 2: ### up to 2 copy
                 i+=1
-            elif species[s] == 2: ### up to 2 copy
+            if species[s] == 2:
                 j+=1
-        if (i+j) >= nsp:
+        if i == 0:
             per = 0.2*len(species) ### 20% of species with 2 copies
             if j<=per:
                 toprint = True
@@ -99,6 +99,7 @@ def get_largest(genes, proteins):
             new_genes.append(pep[-1])
         else:
             new_genes.append(species[sp][0])
+    new_genes = [x.split('++')[0] for x in new_genes]
     if len(new_genes) != len(species.keys()):
         print('ERROR selecting duplicates...')
     return new_genes
@@ -152,7 +153,7 @@ if len(orthologs) < 20:
     if extra == True:
         print('few single copy orthologs', len(orthologs))
         orthologs = get_orthogroups2low(inFile, orthologs, len(pepFiles), gaps)
-        path = './orthogroup_aligment/low_copy/'
+        path = './orthogroups_aligment/low_copy_'+str(gaps)+'/'
         gmo.create_folder(path)
         get_concat(orthologs, proteins, path, len(pepFiles), gaps)
     else:
