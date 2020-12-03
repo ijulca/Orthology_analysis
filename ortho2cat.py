@@ -141,6 +141,8 @@ proteins = GM.remove_stopCodon(proteins)
 path = './orthogroups_aligment/'
 gmo.create_folder(path)
 
+
+
 orthologs = get_orthogroups2single(inFile, len(pepFiles), gaps)
 path = './orthogroups_aligment/single_copy_'+str(gaps) +'/'
 if os.path.exists(path):
@@ -149,14 +151,14 @@ else:
     gmo.create_folder(path)
     get_concat(orthologs, proteins, path, len(pepFiles), gaps)
 
-if len(orthologs) < 20:
-    if extra == True:
-        print('few single copy orthologs', len(orthologs))
-        orthologs = get_orthogroups2low(inFile, orthologs, len(pepFiles), gaps)
-        path = './orthogroups_aligment/low_copy_'+str(gaps)+'/'
-        gmo.create_folder(path)
-        get_concat(orthologs, proteins, path, len(pepFiles), gaps)
-    else:
+if extra == True:
+    print('getting extra concatenation with low copy genes...')
+    orthologs = get_orthogroups2low(inFile, orthologs, len(pepFiles), gaps)
+    path = './orthogroups_aligment/low_copy_'+str(gaps)+'/'
+    gmo.create_folder(path)
+    get_concat(orthologs, proteins, path, len(pepFiles), gaps)
+else:
+    if len(orthologs) < 20:
         print('Warning, less than 20 single copy genes:', len(orthologs))
         print('Try --gaps or --extra options. Is better to try first --gaps option if was not used before')
 
