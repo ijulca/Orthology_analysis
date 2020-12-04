@@ -12,7 +12,7 @@ import orthology_modules as OM
 import pandas as pd
 
 
-def get_table(nodes,genes):
+def get_table(nodes,genes, gene2node):
     table = {}
     for n in nodes:
         if n not in table:
@@ -27,22 +27,40 @@ def get_string(string, nodes,table, tot):
         string += '\t'+str(table[n]*100/tot) ## get percentage
     return string
 
-def get_info_list(df,tag_list,tag_name,nodes,sp,outfile):
+def get_info_list(df,tag_list,tag_name,nodes,gene2node,sp,outfile):
     df2 = df[df['FINAL LOCALIZATION'].isin(tag_list)]
     genes = set(df2['GeneID'].values)
     genes = [x+'-'+sp for x in genes]
-    table = get_table(nodes,genes)
+    table = get_table(nodes,genes, gene2node)
     string = sp + '\t' +tag_name
     string = get_string(string, nodes,table, len(genes))
     print(string,file=outfile)
 
-def get_info_tag(df,tag,nodes,sp,outfile):
+def get_info_tag(df,tag,nodes,gene2node,sp,outfile):
     df2 = df[df['FINAL LOCALIZATION'] == tag]
     genes = set(df2['GeneID'].values)
     genes = [x+'-'+sp for x in genes]
-    table = get_table(nodes,genes)
+    table = get_table(nodes,genes, gene2node)
     string = sp + '\t' +tag
     string = get_string(string, nodes,table, len(genes))
+    print(string,file=outfile)
+    
+def get_info_listTot(df,tag_list,tag_name,nodes,gene2node,sp,outfile,tot):
+    df2 = df[df['FINAL LOCALIZATION'].isin(tag_list)]
+    genes = set(df2['GeneID'].values)
+    genes = [x+'-'+sp for x in genes]
+    table = get_table(nodes,genes, gene2node)
+    string = sp + '\t' +tag_name
+    string = get_string(string, nodes,table, tot)
+    print(string,file=outfile)
+
+def get_info_tagTot(df,tag,nodes,gene2node,sp,outfile,tot):
+    df2 = df[df['FINAL LOCALIZATION'] == tag]
+    genes = set(df2['GeneID'].values)
+    genes = [x+'-'+sp for x in genes]
+    table = get_table(nodes,genes, gene2node)
+    string = sp + '\t' +tag
+    string = get_string(string, nodes,table, tot)
     print(string,file=outfile)
 
 ### main
@@ -60,8 +78,10 @@ outGene2node = outpath+'gene2node.txt'
 treeNodes = outpath+'tree_percentageNodes.svg'
 
 table1 = outpath+'Table_1.csv'
-# ### create tree and ortho2node file
+table2 = outpath+'Table_2.csv'
 
+
+# ### create tree and ortho2node file
 
 # species = OM.loadTaxa(taxaFile)
 # orthogroups = OM.loadOrthofinder(orthoFile)
@@ -90,17 +110,61 @@ parasite = ['PARASITE','parasite','PPM']
 paras = ['PARASITE','parasite']
 exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 
-outfile = open(table1,'w')
-print('species\tTag\t'+'\t'.join(nodes))
+# outfile = open(table1,'w')
+# print('species\tTag\t'+'\t'.join(nodes),file=outfile)
+# for f in infiles:
+#     sp = OM.get_prefix(f).split('_all')[0]
+#     df = pd.read_csv(f,sep='\t',header=0)
+#     get_info_list(df,parasite,'Parasite_all',nodes,gene2node,sp,outfile)
+#     get_info_list(df,paras,'Parasite',nodes,gene2node,sp,outfile)
+#     get_info_tag(df,'PPM',nodes,gene2node,sp,outfile)
+#     get_info_list(df,exported,'Exported_all',nodes,gene2node,sp,outfile)
+#     for tag in exported:
+#         get_info_tag(df,tag,nodes,gene2node,sp,outfile)
+# outfile.close()
+
+###
+proteins = {'PLAF7':5460, 'PLABA':5067, '31271':5217, 'PLAKH':5323, '1323249':6091}
+# outfile = open(table2,'w')
+# print('species\tTag\t'+'\t'.join(nodes),file=outfile)
+# for f in infiles:
+#     sp = OM.get_prefix(f).split('_all')[0]
+#     tot = proteins[sp]
+#     df = pd.read_csv(f,sep='\t',header=0)
+#     get_info_listTot(df,parasite,'Parasite_all',nodes,gene2node,sp,outfile,tot)
+#     get_info_listTot(df,paras,'Parasite',nodes,gene2node,sp,outfile,tot)
+#     get_info_tagTot(df,'PPM',nodes,gene2node,sp,outfile,tot)
+#     get_info_listTot(df,exported,'Exported_all',nodes,gene2node,sp,outfile,tot)
+#     for tag in exported:
+#         get_info_tagTot(df,tag,nodes,gene2node,sp,outfile,tot)
+    
+# outfile.close()
+
+
+#### Calculate total percentages
+# for f in infiles:
+#     sp = OM.get_prefix(f).split('_all')[0]
+#     df = pd.read_csv(f,sep='\t',header=0)
+#     df2 = df[df['FINAL LOCALIZATION'].isin(parasite)]
+#     genes = set(df2['GeneID'].values)
+#     print(sp, 'Parasite', len(genes), len(genes)*100/proteins[sp])
+#     df2 = df[df['FINAL LOCALIZATION'].isin(exported)]
+#     genes = set(df2['GeneID'].values)
+#     print(sp, 'Exported', len(genes), len(genes)*100/proteins[sp])
+
+### create tables of each file with the node feature
+
 for f in infiles:
     sp = OM.get_prefix(f).split('_all')[0]
-    df = pd.read_csv(f,sep='\t',header=0)
-    get_info_list(df,parasite,'Parasite_all',nodes,sp,outfile)
-    get_info_list(df,paras,'Parasite',nodes,sp,outfile)
-    get_info_tag(df,'PPM',nodes,sp,outfile)
-    get_info_list(df,exported,'Exported_all',nodes,sp,outfile)
-    for tag in exported:
-        get_info_tag(df,tag,nodes,sp,outfile)
-    
-outfile.close()
+    outfile = open(outpath+sp+'_nodes.csv', 'w')
+    for line in open(f):
+        line = line.strip()
+        data = line.split('\t')
+        if data[0] == 'GeneID':
+            line += '\t'+'phylostrata'
+        else:
+            key = data[0]+'-'+sp
+            line+= '\t'+gene2node[key]
+        print(line,file=outfile)
+    outfile.close()
     
