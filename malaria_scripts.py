@@ -65,8 +65,10 @@ def get_info_tagTot(df,tag,nodes,gene2node,sp,outfile,tot):
 
 ### main
 taxaFile = '/home/ijulca/projects/Malaria/taxa.txt'
-orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec03/Orthogroups/Orthogroups.txt'
-spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18.txt' 
+#orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec03/Orthogroups/Orthogroups.txt'
+orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec15/Orthogroups/Orthogroups.txt'
+#spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18.txt' 
+spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18HM.txt'
 pepPath = ''
 
 infiles = glob.glob('/home/ijulca/projects/Malaria/Data_plasmodium/*')
@@ -124,7 +126,9 @@ exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 # outfile.close()
 
 ###
-proteins = {'PLAF7':5460, 'PLABA':5067, '31271':5217, 'PLAKH':5323, '1323249':6091}
+#proteins = {'PLAF7':5460, 'PLABA':5067, '31271':5217, 'PLAKH':5323, '1323249':6091} ### proteomes
+# proteins = {'PLAF7':3424, 'PLABA':3307, '31271':3354, 'PLAKH':3428, '1323249':3546}
+
 # outfile = open(table2,'w')
 # print('species\tTag\t'+'\t'.join(nodes),file=outfile)
 # for f in infiles:
@@ -154,17 +158,17 @@ proteins = {'PLAF7':5460, 'PLABA':5067, '31271':5217, 'PLAKH':5323, '1323249':60
 
 ### create tables of each file with the node feature
 
-for f in infiles:
-    sp = OM.get_prefix(f).split('_all')[0]
-    outfile = open(outpath+sp+'_nodes.csv', 'w')
-    for line in open(f):
-        line = line.strip()
-        data = line.split('\t')
-        if data[0] == 'GeneID':
-            line += '\t'+'phylostrata'
-        else:
-            key = data[0]+'-'+sp
-            line+= '\t'+gene2node[key]
-        print(line,file=outfile)
-    outfile.close()
+# for f in infiles:
+#     sp = OM.get_prefix(f).split('_all')[0]
+#     outfile = open(outpath+sp+'_nodes.csv', 'w')
+#     for line in open(f):
+#         line = line.strip()
+#         data = line.split('\t')
+#         if data[0] == 'GeneID':
+#             line += '\t'+'phylostrata'
+#         else:
+#             key = data[0]+'-'+sp
+#             line+= '\t'+gene2node[key]
+#         print(line,file=outfile)
+#     outfile.close()
     
