@@ -63,6 +63,24 @@ def get_info_tagTot(df,tag,nodes,gene2node,sp,outfile,tot):
     string = get_string(string, nodes,table, tot)
     print(string,file=outfile)
 
+def get_sp2gene2loc(files):
+    table = {}
+    loctag = set([])
+    for f in files:
+        sp = OM.get_prefix(f).split('_all')[0]
+        table[sp] = {}
+        for line in open(f):
+            line = line.strip()
+            data = line.split('\t')
+            if data[0] != 'GeneID':
+                if len(data) ==8:
+                    key = data[0]+'-'+sp
+                    table[sp][key] = data[7]
+                    loctag.add(data[7])
+        print(sp,len(table[sp]))
+    return table,loctag
+        
+
 ### main
 taxaFile = '/home/ijulca/projects/Malaria/taxa.txt'
 #orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec03/Orthogroups/Orthogroups.txt'
@@ -103,14 +121,14 @@ table2 = outpath+'Table_2.csv'
 
 ##########
 #proteins = OM.load_pepFromPath(pepPath)
-gene2node = OM.load_ortho2node(outGene2node)
-nodes = ['NODE_'+str(i) for i in range(1,18)]
-plasmo = ['PLAF7','PLABA', '31271','PLAKH','1323249']
-nodes+=plasmo
+# gene2node = OM.load_ortho2node(outGene2node)
+# nodes = ['NODE_'+str(i) for i in range(1,18)]
+# plasmo = ['PLAF7','PLABA', '31271','PLAKH','1323249']
+# nodes+=plasmo
 
-parasite = ['PARASITE','parasite','PPM']
-paras = ['PARASITE','parasite']
-exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+# parasite = ['PARASITE','parasite','PPM']
+# paras = ['PARASITE','parasite']
+# exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 
 # outfile = open(table1,'w')
 # print('species\tTag\t'+'\t'.join(nodes),file=outfile)
@@ -171,4 +189,15 @@ exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 #             line+= '\t'+gene2node[key]
 #         print(line,file=outfile)
 #     outfile.close()
-    
+
+### Calculate p-value
+gene2node = OM.load_ortho2node(outGene2node)
+nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13','NODE_15','NODE_16','NODE_17']
+plasmo = ['PLAF7','PLABA', '31271','PLAKH','1323249']
+nodes+=plasmo
+
+parasite = ['PARASITE','parasite','PPM']
+paras = ['PARASITE','parasite']
+exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+
+table, loctag = get_sp2gene2loc(infiles)
