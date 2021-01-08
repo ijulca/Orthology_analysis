@@ -145,7 +145,7 @@ def get_enrichNodePlot(inFile, sp2nodes, outname, samples):
 ### main
 taxaFile = '/home/ijulca/projects/Malaria/taxa.txt'
 #orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec03/Orthogroups/Orthogroups.txt'
-orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec15/Orthogroups/Orthogroups.txt'
+enomorthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec15/Orthogroups/Orthogroups.txt'
 #spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18.txt' 
 spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18HM.txt'
 pepPath = ''
@@ -163,10 +163,11 @@ treeNodes = outpath+'tree_percentageNodes.svg'
 table1 = outpath+'Table_1.csv'
 table2 = outpath+'Table_2.csv'
 
-Node2Enrich = outpath+'nodeEnrich.csv'
+Node2Enrich = outpath+'nodeEnrich.csv' ##(Table_3)
 Node2EnrichPlot = outpath+'nodeEnrich'
 
-hostFile = outpath +'hostOrthogroups.csv'
+hostFile = outpath +'Table_4.csv' ##(Table_4)
+pephostFile = outpath +'Table_5.csv'
 
 
 # ### create tree and ortho2node file
@@ -261,111 +262,148 @@ exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 #     outfile.close()
 
 ###################### Calculate p-value
-# sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
+sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
 
-# nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13']
-# sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','PLAKH'],'31271':nodes+['NODE_15','NODE_16','31271'], 
-#             '1323249':nodes+['NODE_15','NODE_16','NODE_17','1323249'],'PLABA':nodes+['NODE_15','NODE_16','NODE_17','PLABA']}
+nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13']
+sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','PLAKH'],'31271':nodes+['NODE_15','NODE_16','31271'], 
+            '1323249':nodes+['NODE_15','NODE_16','NODE_17','1323249'],'PLABA':nodes+['NODE_15','NODE_16','NODE_17','PLABA']}
 
-# gene2node = OM.load_ortho2node(outGene2node)
-# # sp2gene2node = {} ### all proteome
-# # for g in gene2node:
-# #     sp = g.split('-')[-1]
-# #     if sp not in sp2gene2node:
-# #         sp2gene2node[sp] = {}
-# #     sp2gene2node[sp][g] = gene2node[g]
+gene2node = OM.load_ortho2node(outGene2node)
+# sp2gene2node = {} ### all proteome
+# for g in gene2node:
+#     sp = g.split('-')[-1]
+#     if sp not in sp2gene2node:
+#         sp2gene2node[sp] = {}
+#     sp2gene2node[sp][g] = gene2node[g]
 
-# x=10000
+x=1000
 
-# parasite = ['PARASITE','parasite','PPM']
-# paras = ['PARASITE','parasite']
-# exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+parasite = ['PARASITE','parasite','PPM']
+paras = ['PARASITE','parasite']
+exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 
-# table = get_sp2gene2loc(infiles)
-# sp2loc2gene, loctag = {}, set(['Parasite_all','Parasite','Exported_all'])
-# for sp in table:
-#     sp2loc2gene[sp] = {'Parasite_all':set([]), 'Exported_all':set([]),'Parasite':set([])}
-#     for g in table[sp]:
-#         loc = table[sp][g]
-#         if loc in parasite:
-#             sp2loc2gene[sp]['Parasite_all'].add(g)
-#             if loc in paras:
-#                 sp2loc2gene[sp]['Parasite'].add(g)
-#             else:
-#                 if loc not in sp2loc2gene[sp]:
-#                     sp2loc2gene[sp][loc] = set([])
-#                     loctag.add(loc)
-#                 sp2loc2gene[sp][loc].add(g)
-#         if loc in exported:
-#             sp2loc2gene[sp]['Exported_all'].add(g)
-#             if loc not in sp2loc2gene[sp]:
-#                 sp2loc2gene[sp][loc] = set([])
-#                 loctag.add(loc)
-#             sp2loc2gene[sp][loc].add(g)
+table = get_sp2gene2loc(infiles)
+sp2loc2gene, loctag = {}, set(['Parasite_all','Parasite','Exported_all'])
+for sp in table:
+    sp2loc2gene[sp] = {'Parasite_all':set([]), 'Exported_all':set([]),'Parasite':set([])}
+    for g in table[sp]:
+        loc = table[sp][g]
+        if loc in parasite:
+            sp2loc2gene[sp]['Parasite_all'].add(g)
+            if loc in paras:
+                sp2loc2gene[sp]['Parasite'].add(g)
+            else:
+                if loc not in sp2loc2gene[sp]:
+                    sp2loc2gene[sp][loc] = set([])
+                    loctag.add(loc)
+                sp2loc2gene[sp][loc].add(g)
+        if loc in exported:
+            sp2loc2gene[sp]['Exported_all'].add(g)
+            if loc not in sp2loc2gene[sp]:
+                sp2loc2gene[sp][loc] = set([])
+                loctag.add(loc)
+            sp2loc2gene[sp][loc].add(g)
         
 
 
-# OM.get_enrichment2node(Node2Enrich, sp2loc2gene, sp2gene2node, sp2nodes, x)
+OM.get_enrichment2node(Node2Enrich, sp2loc2gene, sp2gene2node, sp2nodes, x)
 
-# loctag = ['Parasite_all','Parasite','PPM','Exported_all','EXPORTED',"Cleft's", 'GHOST', 'VESICLE','HCC', 'PV', 'PVM', 'PV or PVM']
-# get_enrichNodePlot(Node2Enrich, sp2nodes, Node2EnrichPlot, loctag)
+loctag = ['Parasite_all','Parasite','PPM','Exported_all','EXPORTED',"Cleft's", 'GHOST', 'VESICLE','HCC', 'PV', 'PVM', 'PV or PVM']
+get_enrichNodePlot(Node2Enrich, sp2nodes, Node2EnrichPlot, loctag)
 
-
+a= 0000
 ###################### Orthogroups
-orthogroups = OM.loadOrthofinder(orthoFile)
-sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
+# orthogroups = OM.loadOrthofinder(orthoFile)
+# sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
 
-plasmodium = ['PLAF7', 'PLABA', '31271', 'PLAKH', '1323249']
-hosts = ['HUMAN', 'MOUSE']
+# plasmodium = ['PLAF7', 'PLABA', '31271', 'PLAKH', '1323249']
+# hosts = ['HUMAN', 'MOUSE']
 
-table = {}
-g = 0
-for group in orthogroups:
-    species = OM.get_species(orthogroups[group])
-    plas = [x for x in species if x in plasmodium]
-    host = [x for x in species if x in hosts]
-    if len(plas)>0 and len(host)>0:
-        if len(plas) == 1:
-            key = plas[0]
-            pep = [x for x in species[key] if x in list(sp2gene2node[key].keys())]
-            if len(pep) > 0:
-                g+=1
-                if key not in table:
-                    table[key] = [0,0,0] # Human, mouse, both
-                if len(host) == 2:
-                    table[key][2] += 1
-                elif 'HUMAN' in host:
-                    table[key][0] += 1
-                elif 'MOUSE' in host:
-                    table[key][1] += 1
-        else:
-            toprint = False
-            for sp in plas:
-                pep = [x for x in species[sp] if x in list(sp2gene2node[sp].keys())]
-                if len(pep) > 0: #### check if at least one species has a protein in the list of omar
-                    toprint = True
-            if toprint == True:
-                g+=1
-                key = ''
-                for sp in plasmodium:
-                    if sp in plas:
-                        key += '-'+sp
-                if key not in table:
-                    table[key] = [0,0,0]
-                if len(host) == 2:
-                    table[key][2] += 1
-                elif 'HUMAN' in host:
-                    table[key][0] += 1
-                elif 'MOUSE' in host:
-                    table[key][1] += 1
+# table = {}
+# g = 0
+# for group in orthogroups:
+#     species = OM.get_species(orthogroups[group])
+#     plas = [x for x in species if x in plasmodium]
+#     host = [x for x in species if x in hosts]
+#     if len(plas)>0 and len(host)>0:
+#         if len(plas) == 1:
+#             key = plas[0]
+#             pep = [x for x in species[key] if x in list(sp2gene2node[key].keys())]
+#             if len(pep) > 0:
+#                 g+=1
+#                 if key not in table:
+#                     table[key] = [set([]),set([]),set([])] # Human, mouse, both
+#                 if len(host) == 2:
+#                     table[key][2].add(group)
+#                 elif 'HUMAN' in host:
+#                     table[key][0].add(group)
+#                 elif 'MOUSE' in host:
+#                     table[key].add(group)
+#         else:
+#             toprint = False
+#             for sp in plas:
+#                 pep = [x for x in species[sp] if x in list(sp2gene2node[sp].keys())]
+#                 if len(pep) > 0: #### check if at least one species has a protein in the list of omar
+#                     toprint = True
+#             if toprint == True:
+#                 g+=1
+#                 key = ''
+#                 for sp in plasmodium:
+#                     if sp in plas:
+#                         key += '-'+sp
+#                 if key not in table:
+#                     table[key] = [set([]),set([]),set([])]
+#                 if len(host) == 2:
+#                     table[key][2].add(group)
+#                 elif 'HUMAN' in host:
+#                     table[key][0].add(group)
+#                 elif 'MOUSE' in host:
+#                     table[key][1].add(group)
                 
                 
-print('Number of orthogroups analysed:', g)
-outfile = open(hostFile, 'w')
-print('Plasmodium\tHUMAN\tMOUSE\tBOTH\t%HUMAN\t%MOUSE\t%BOTH', file=outfile)
-for key in table:
-    values = [str(x) for x in table[key]]
-    pervalues = [str(x*100/g) for x in table[key]]
-    string = key+'\t'+'\t'.join(values)+'\t'+'\t'.join(pervalues)
-    print(string,file=outfile)
-outfile.close()
+# print('Number of orthogroups analysed:', g)
+# outfile = open(hostFile, 'w')
+# print('Plasmodium\tHUMAN\tMOUSE\tBOTH\t%HUMAN\t%MOUSE\t%BOTH', file=outfile)
+# for key in table:
+#     #values = [str(x) for x in table[key]]
+#     values = [str(len(x)) for x in table[key]]
+#     pervalues = [str(len(x)*100/g) for x in table[key]]
+#     string = key+'\t'+'\t'.join(values)+'\t'+'\t'.join(pervalues)
+#     print(string,file=outfile)
+# outfile.close()
+
+# fun = {}
+# for line in open('/home/ijulca/projects/Malaria/analysis/PLAF7_nodes.csv'):
+#     line = line.strip()
+#     data = line.split('\t')
+#     fun[data[0]] = data[1]
+
+# outfile = open(pephostFile, 'w')
+# print('orthogroup\tplasmodium\thost\t'+'\t'.join(plasmodium+hosts)+'\tOther species\tFunction in PLAF7',file=outfile)
+# for key in table:
+#     for i in range(0,len(table[key])):
+#         if i == 0:
+#             name = 'HUMAN'
+#         elif i == 1:
+#             name = 'MOUSE'
+#         elif i == 2:
+#             name = 'BOTH'
+#         else:
+#             print('Error number of elements...')
+#         for g in table[key][i]:
+#             species = OM.get_species(orthogroups[g])
+#             string = g +'\t'+key+'\t'+name
+#             pep_fun = []
+#             for sp in list(plasmodium+hosts):
+#                 if sp in species:
+#                     sp_pep = [x.split('-')[0] for x in species[sp]]
+#                     string += '\t'+';'.join(sp_pep)
+#                     if sp == 'PLAF7':
+#                         pep_fun = [fun[x] for x in sp_pep if x in fun]
+#                 else:
+#                     string += '\t-'
+#             print(pep_fun)
+#             pep = [x.split('-')[0] for x in orthogroups[g] if x.split('-')[-1] not in list(plasmodium+hosts)]
+#             string +='\t'+ ';'.join(pep)+'\t'+';'.join(pep_fun)
+#             print(string,file=outfile)
+# outfile.close()
