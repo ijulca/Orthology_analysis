@@ -145,7 +145,7 @@ def get_enrichNodePlot(inFile, sp2nodes, outname, samples):
 ### main
 taxaFile = '/home/ijulca/projects/Malaria/taxa.txt'
 #orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec03/Orthogroups/Orthogroups.txt'
-enomorthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec15/Orthogroups/Orthogroups.txt'
+orthoFile = '/home/ijulca/projects/Malaria/proteomes/OrthoFinder/Results_Dec15/Orthogroups/Orthogroups.txt'
 #spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18.txt' 
 spTree = '/home/ijulca/projects/Malaria/species_tree/species_tree18HM.txt'
 pepPath = ''
@@ -156,7 +156,7 @@ nodeFiles = glob.glob('/home/ijulca/projects/Malaria/analysis/*_nodes.csv')
 
 ### outputs:
 outpath = '/home/ijulca/projects/Malaria/analysis/'
-outOrtho2node = outpath+'ortho2node.txt'
+outOrtho2node = outpath+'ortho2node'
 outGene2node = outpath+'gene2node.txt'
 treeNodes = outpath+'tree_percentageNodes.svg'
 
@@ -172,14 +172,14 @@ pephostFile = outpath +'Table_5.csv'
 
 # ### create tree and ortho2node file
 
-# species = OM.loadTaxa(taxaFile)
-# orthogroups = OM.loadOrthofinder(orthoFile)
+species = OM.loadTaxa(taxaFile)
+orthogroups = OM.loadOrthofinder(orthoFile)
 
-# t,node_names = OM.load_tree_nodes(spTree)
-# perOrtho = OM.create_ortho2node(orthogroups, outOrtho2node, t, node_names)
+t,node_names = OM.load_tree_nodes(spTree)
+perOrtho = OM.create_ortho2node(orthogroups, outOrtho2node, t, node_names)
 
-# t = OM.change_leafName(t,species)
-# OM.tree_nodes_orthoper(t, perOrtho, treeNodes)
+t = OM.change_leafName(t,species)
+OM.tree_nodes_orthoper(t, perOrtho, treeNodes)
 
 
 # ### create gene to node
@@ -190,14 +190,14 @@ pephostFile = outpath +'Table_5.csv'
 
 ##########
 # proteins = OM.load_pepFromPath(pepPath) ### old
-gene2node = OM.load_ortho2node(outGene2node)
-nodes = ['NODE_'+str(i) for i in range(1,18)]
-plasmo = ['PLAF7','PLABA', '31271','PLAKH','1323249']
-nodes+=plasmo
+# gene2node = OM.load_ortho2node(outGene2node)
+# nodes = ['NODE_'+str(i) for i in range(1,18)]
+# plasmo = ['PLAF7','PLABA', '31271','PLAKH','1323249']
+# nodes+=plasmo
 
-parasite = ['PARASITE','parasite','PPM']
-paras = ['PARASITE','parasite']
-exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+# parasite = ['PARASITE','parasite','PPM']
+# paras = ['PARASITE','parasite']
+# exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 
 # outfile = open(table1,'w')
 # print('species\tTag\t'+'\t'.join(nodes),file=outfile)
@@ -262,13 +262,13 @@ exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 #     outfile.close()
 
 ###################### Calculate p-value
-sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
+# sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
 
-nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13']
-sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','PLAKH'],'31271':nodes+['NODE_15','NODE_16','31271'], 
-            '1323249':nodes+['NODE_15','NODE_16','NODE_17','1323249'],'PLABA':nodes+['NODE_15','NODE_16','NODE_17','PLABA']}
+# nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13']
+# sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','PLAKH'],'31271':nodes+['NODE_15','NODE_16','31271'], 
+#             '1323249':nodes+['NODE_15','NODE_16','NODE_17','1323249'],'PLABA':nodes+['NODE_15','NODE_16','NODE_17','PLABA']}
 
-gene2node = OM.load_ortho2node(outGene2node)
+# gene2node = OM.load_ortho2node(outGene2node)
 # sp2gene2node = {} ### all proteome
 # for g in gene2node:
 #     sp = g.split('-')[-1]
@@ -276,42 +276,42 @@ gene2node = OM.load_ortho2node(outGene2node)
 #         sp2gene2node[sp] = {}
 #     sp2gene2node[sp][g] = gene2node[g]
 
-x=1000
+# x=1000
 
-parasite = ['PARASITE','parasite','PPM']
-paras = ['PARASITE','parasite']
-exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+# parasite = ['PARASITE','parasite','PPM']
+# paras = ['PARASITE','parasite']
+# exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
 
-table = get_sp2gene2loc(infiles)
-sp2loc2gene, loctag = {}, set(['Parasite_all','Parasite','Exported_all'])
-for sp in table:
-    sp2loc2gene[sp] = {'Parasite_all':set([]), 'Exported_all':set([]),'Parasite':set([])}
-    for g in table[sp]:
-        loc = table[sp][g]
-        if loc in parasite:
-            sp2loc2gene[sp]['Parasite_all'].add(g)
-            if loc in paras:
-                sp2loc2gene[sp]['Parasite'].add(g)
-            else:
-                if loc not in sp2loc2gene[sp]:
-                    sp2loc2gene[sp][loc] = set([])
-                    loctag.add(loc)
-                sp2loc2gene[sp][loc].add(g)
-        if loc in exported:
-            sp2loc2gene[sp]['Exported_all'].add(g)
-            if loc not in sp2loc2gene[sp]:
-                sp2loc2gene[sp][loc] = set([])
-                loctag.add(loc)
-            sp2loc2gene[sp][loc].add(g)
+# table = get_sp2gene2loc(infiles)
+# sp2loc2gene, loctag = {}, set(['Parasite_all','Parasite','Exported_all'])
+# for sp in table:
+#     sp2loc2gene[sp] = {'Parasite_all':set([]), 'Exported_all':set([]),'Parasite':set([])}
+#     for g in table[sp]:
+#         loc = table[sp][g]
+#         if loc in parasite:
+#             sp2loc2gene[sp]['Parasite_all'].add(g)
+#             if loc in paras:
+#                 sp2loc2gene[sp]['Parasite'].add(g)
+#             else:
+#                 if loc not in sp2loc2gene[sp]:
+#                     sp2loc2gene[sp][loc] = set([])
+#                     loctag.add(loc)
+#                 sp2loc2gene[sp][loc].add(g)
+#         if loc in exported:
+#             sp2loc2gene[sp]['Exported_all'].add(g)
+#             if loc not in sp2loc2gene[sp]:
+#                 sp2loc2gene[sp][loc] = set([])
+#                 loctag.add(loc)
+#             sp2loc2gene[sp][loc].add(g)
         
 
 
-OM.get_enrichment2node(Node2Enrich, sp2loc2gene, sp2gene2node, sp2nodes, x)
+# OM.get_enrichment2node(Node2Enrich, sp2loc2gene, sp2gene2node, sp2nodes, x)
 
-loctag = ['Parasite_all','Parasite','PPM','Exported_all','EXPORTED',"Cleft's", 'GHOST', 'VESICLE','HCC', 'PV', 'PVM', 'PV or PVM']
-get_enrichNodePlot(Node2Enrich, sp2nodes, Node2EnrichPlot, loctag)
+# loctag = ['Parasite_all','Parasite','PPM','Exported_all','EXPORTED',"Cleft's", 'GHOST', 'VESICLE','HCC', 'PV', 'PVM', 'PV or PVM']
+# get_enrichNodePlot(Node2Enrich, sp2nodes, Node2EnrichPlot, loctag)
 
-a= 0000
+# a= 0000
 ###################### Orthogroups
 # orthogroups = OM.loadOrthofinder(orthoFile)
 # sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table
