@@ -20,14 +20,14 @@ parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="orthog
 parser.add_argument("-p", "--pepFile", dest="pepFile", required=True, help="db of the proteins")
 parser.add_argument("-c", "--cdsFile", dest="cdsFile", default='', help="db of the cds (optional)")
 parser.add_argument("-s", "--size", dest="size", default='2', help="minimum size to be included. Default=2")
-parser.add_argument("-o", "--path", dest="path", default='./data/', help="path where to create the folders")
+parser.add_argument("-o", "--path", dest="path", default='./Data/', help="path where to create the folders")
 args = parser.parse_args()
 
 orthoFile = args.inFile
 pepFile = args.pepFile
 cdsFile = args.cdsFile
 size = int(args.size)
-outpath = args.path
+outpath = args.path+'/'
 
 ortho2pep = OM.loadOrthofinder(orthoFile)
 ortho2pep = OM.flt_orthogroups(ortho2pep, size)
