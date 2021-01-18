@@ -45,7 +45,7 @@ for i in range(1,r,1000):
     z = i + 1000
     if z >r:
         z = r
-    outdir1 = outpath+str(i)+'-'+str(z)+'/'
+    outdir1 = outpath+str(i)+'-'+str(z-1)+'/'
     gmo.create_folder(outdir1)
     for j in range(i,z):
         group = families[j]
