@@ -47,7 +47,7 @@ for i in range(0,r,1000):
     outdir1 = outpath+str(i+1)+'-'+str(z)+'/'
     gmo.create_folder(outdir1)
     for j in range(i,z):
-        group = families[j].reaplace(':','')
+        group = families[j].replace(':','')
         genes = ortho2pep[group]
         outdir2 = outdir1+group+'/'
         gmo.create_folder(outdir2)
