@@ -50,7 +50,7 @@ for i in range(1,r,1000):
     for j in range(i,z):
         group = families[j]
         genes = ortho2pep[group]
-        outdir2 = outpath+group+'/'
+        outdir2 = outdir1+group+'/'
         gmo.create_folder(outdir2)
         outpep = open(outdir2+group+'.fa', 'w')
         if cdsFile != '':
