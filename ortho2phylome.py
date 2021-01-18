@@ -37,18 +37,17 @@ if cdsFile != '':
 
 families = list(ortho2pep.keys())
 print('Number of orthogroups that will be analysed:', len(families))
-r = len(families)+1
+r = len(families)
 
 gmo.create_folder(outpath)
-for i in range(1,r,1000):
-    
+for i in range(0,r,1000):
     z = i + 1000
     if z >r:
         z = r
-    outdir1 = outpath+str(i)+'-'+str(z-1)+'/'
+    outdir1 = outpath+str(i+1)+'-'+str(z)+'/'
     gmo.create_folder(outdir1)
     for j in range(i,z):
-        group = families[j]
+        group = families[j].reaplace(':','')
         genes = ortho2pep[group]
         outdir2 = outdir1+group+'/'
         gmo.create_folder(outdir2)
