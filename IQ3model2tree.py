@@ -6,11 +6,9 @@ Created on Tue Jan 19 18:48:24 2021
 @author: ijulca
 """
 import argparse, glob
-import sys, os
-sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
-import genome_modules as GM
-import orthology_modules as OM
-import general_modules as gmo
+#import sys, os
+#sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
+
 
 iqtree = '/home/irene.julca/Programs/iqtree-2.1.2-Linux/bin/iqtree2'
 
