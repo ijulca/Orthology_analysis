@@ -21,6 +21,14 @@ def get_model(inFile):
                 model = model.replace(' ','')
     return model
 
+def check_genetree(f):
+    folder = f.split('model')[0]
+    files = glob.glob(folder+'/*')
+    toprint = False
+    for f in files:
+        if 'genetree' in f:
+            toprint = True
+    return toprint
 
 ### main
 parser = argparse.ArgumentParser(description="get the model and create the jobs for the tree reconstruction")
@@ -30,13 +38,18 @@ args = parser.parse_args()
 path = args.path
 
 modelFiles = glob.glob(path+'/*/*/model.iqtree')
-
-outfile = open('tree.jobs', 'w')
+g=0
+outfile = open('genetree.job', 'w')
 for f in modelFiles:
-    model = get_model(f)
-    alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
-    pref = f.split('model')[0]+'genetree'
-    cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref
-    print(cmd,file=outfile)
+    toprint = check_genetree(f)
+    if toprint == 'False':
+        model = get_model(f)
+        alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
+        pref = f.split('model')[0]+'genetree'
+        cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref +' -T 2 -B 1000' ### faster -B 1000, but better -b 100
+        print(cmd,file=outfile)
+    else:
+        g+=1
 outfile.close()
-print('End...')
+print('orthogroups that have genetree:',g)
+print('orthogroups to be analysed:',len(modelFiles)-g)
