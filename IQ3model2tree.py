@@ -25,8 +25,8 @@ def check_genetree(f):
     folder = f.split('model')[0]
     files = glob.glob(folder+'/*')
     toprint = False
-    for f in files:
-        if 'genetree' in f:
+    for e in files:
+        if 'genetree' in e:
             toprint = True
     return toprint
 
