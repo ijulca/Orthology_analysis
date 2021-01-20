@@ -42,7 +42,7 @@ g=0
 outfile = open('genetree.job', 'w')
 for f in modelFiles:
     toprint = check_genetree(f)
-    if toprint == 'False':
+    if toprint == False:
         model = get_model(f)
         alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
         pref = f.split('model')[0]+'genetree'
