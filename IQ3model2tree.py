@@ -46,8 +46,8 @@ def check_spider(f, num_seq):
                 num_seq.add(log)
         if toprint == False:
             print('unfinished job:',log)
-            #cmd = 'rm '+folder+'/genetree.*'
-            #gmo.run_command(cmd)
+            cmd = 'rm '+folder+'/genetree.*'
+            gmo.run_command(cmd)
     return toprint, num_seq
 
 ### main
