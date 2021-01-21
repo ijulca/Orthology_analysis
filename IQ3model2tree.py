@@ -66,7 +66,7 @@ num_seq = set([])
 outfile = open('genetree.job', 'w')
 for f in modelFiles:
     if spider == True:
-        toprint, num_seq = check_spider(f)
+        toprint, num_seq = check_spider(f,num_seq)
     else:
         toprint = check_genetree(f)
     if toprint == False:
@@ -78,6 +78,6 @@ for f in modelFiles:
     else:
         g+=1
 outfile.close()
-print('orthogroups that have genetree:',g)
+print('orthogroups that have genetree:',g-len(num_seq))
 print('orthogroups that have <4 seq:', len(num_seq), num_seq)
 print('orthogroups to be analysed:',len(modelFiles)-g)
