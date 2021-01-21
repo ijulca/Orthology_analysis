@@ -34,9 +34,8 @@ def check_genetree(f):
 def check_spider(f):
     folder = f.split('model')[0]
     log = folder+'/genetree.log'
-    files = glob.glob(folder+'/*')
     toprint = False
-    if log in files:
+    if os.path.isfile(log) == True:
         with open(log, 'r') as f:
             lines = f.read().splitlines()
             last_line = lines[-1]
