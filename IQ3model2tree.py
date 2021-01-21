@@ -41,7 +41,7 @@ def check_spider(f):
             last_line = lines[-1]
             if 'Date and Time:' in last_line:
                 toprint = True
-        if toprint == True:
+        if toprint == False:
             print(log)
             #cmd = 'rm '+folder+'/genetree.*'
             #gmo.run_command(cmd)
