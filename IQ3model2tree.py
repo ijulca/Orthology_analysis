@@ -31,7 +31,7 @@ def check_genetree(f):
             toprint = True
     return toprint
 
-def check_spider(f):
+def check_spider(f, num_seq):
     folder = f.split('model')[0]
     log = folder+'/genetree.log'
     toprint = False
@@ -41,11 +41,14 @@ def check_spider(f):
             last_line = lines[-1]
             if 'Date and Time:' in last_line:
                 toprint = True
+            elif 'ERROR: It makes no sense to perform bootstrap with less than 4 sequences.' in last_line:
+                toprint = True
+                num_seq.add(log)
         if toprint == False:
             print(log)
             #cmd = 'rm '+folder+'/genetree.*'
             #gmo.run_command(cmd)
-    return toprint
+    return toprint, num_seq
 
 ### main
 parser = argparse.ArgumentParser(description="get the model and create the jobs for the tree reconstruction")
@@ -59,10 +62,11 @@ print('spider',spider)
 
 modelFiles = glob.glob(path+'/*/*/model.iqtree')
 g=0
+num_seq = set([])
 outfile = open('genetree.job', 'w')
 for f in modelFiles:
     if spider == True:
-        toprint = check_spider(f)
+        toprint, num_seq = check_spider(f)
     else:
         toprint = check_genetree(f)
     if toprint == False:
@@ -75,4 +79,5 @@ for f in modelFiles:
         g+=1
 outfile.close()
 print('orthogroups that have genetree:',g)
+print('orthogroups that have <4 seq:', len(num_seq), num_seq)
 print('orthogroups to be analysed:',len(modelFiles)-g)
