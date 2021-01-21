@@ -45,7 +45,7 @@ def check_spider(f, num_seq):
                 toprint = True
                 num_seq.add(log)
         if toprint == False:
-            print(log)
+            print('unfinished job:',log)
             #cmd = 'rm '+folder+'/genetree.*'
             #gmo.run_command(cmd)
     return toprint, num_seq
@@ -79,5 +79,5 @@ for f in modelFiles:
         g+=1
 outfile.close()
 print('orthogroups that have genetree:',g-len(num_seq))
-print('orthogroups that have <4 seq:', len(num_seq), num_seq)
+print('orthogroups that have <4 seq:', len(num_seq))#, num_seq)
 print('orthogroups to be analysed:',len(modelFiles)-g)
