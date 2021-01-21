@@ -56,7 +56,7 @@ args = parser.parse_args()
 
 path = args.path
 spider = args.spider
-print(spider)
+print('spider',spider)
 
 modelFiles = glob.glob(path+'/*/*/model.iqtree')
 g=0
