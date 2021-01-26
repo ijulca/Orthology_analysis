@@ -25,29 +25,31 @@ def get_model(inFile):
 def check_genetree(f):
     folder = f.split('model')[0]
     files = glob.glob(folder+'/*')
-    toprint = False
+    toprint = 0
     for e in files:
         if 'genetree' in e:
-            toprint = True
+            toprint = 1
     return toprint
 
 def check_spider(f, num_seq):
     folder = f.split('model')[0]
     log = folder+'/genetree.log'
-    toprint = False
+    toprint = 0
     if os.path.isfile(log) == True:
         with open(log, 'r') as f:
             lines = f.read().splitlines()
             last_line = lines[-1]
             if 'Date and Time:' in last_line:
-                toprint = True
+                toprint = 1
             elif 'ERROR: It makes no sense to perform bootstrap with less than 4 sequences.' in last_line:
-                toprint = True
+                toprint = 2
                 num_seq.add(log)
-        if toprint == False:
+        if toprint == 0:
             print('unfinished job:',log)
+        if toprint == 0 or toprint == 2:
             cmd = 'rm '+folder+'/genetree.*'
             gmo.run_command(cmd)
+            
     return toprint, num_seq
 
 ### main
@@ -69,11 +71,17 @@ for f in modelFiles:
         toprint, num_seq = check_spider(f,num_seq)
     else:
         toprint = check_genetree(f)
-    if toprint == False:
+    if toprint == 0:
         model = get_model(f)
         alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
         pref = f.split('model')[0]+'genetree'
         cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref +' -T 2 -B 1000' ### faster -B 1000, but better -b 100
+        print(cmd,file=outfile)
+    elif toprint == 2:
+        model = get_model(f)
+        alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
+        pref = f.split('model')[0]+'genetree'
+        cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref +' -T 2' ### no bootstrap for less than 4 seq
         print(cmd,file=outfile)
     else:
         g+=1
