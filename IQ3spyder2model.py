@@ -21,11 +21,14 @@ def check_spider(group,num_seq):
             last_line = lines[-1]
             if 'Date and Time:' in last_line:
                 toprint = True
+            elif 'ERROR: There must be at least 3 sequences' in last_line:
+                toprin = True
+                num_seq.add(log)
         if toprint == False:
             print('unfinished job:',log)
             num_seq.add(log)
-            #cmd = 'rm '+group+'/model.*'
-#            gmo.run_command(cmd)
+            cmd = 'rm '+group+'/model.*'
+            gmo.run_command(cmd)
     return toprint, num_seq
 
 
