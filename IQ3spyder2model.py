@@ -22,7 +22,7 @@ def check_spider(group,num_seq):
             if 'Date and Time:' in last_line:
                 toprint = True
             elif 'ERROR: There must be at least 3 sequences' in last_line:
-                toprin = True
+                toprint = True
         if toprint == False:
             print('unfinished job:',log)
             num_seq.add(log)
