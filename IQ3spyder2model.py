@@ -43,7 +43,7 @@ groups = glob.glob(path+'/*/*')
 outfile = open('model.job', 'w')
 num_seq = set([])
 for g in groups:
-    toprint, num_seq = check_spider(g)
+    toprint, num_seq = check_spider(g, num_seq)
     if toprint == False:
         cmd = iqtree+' -s '+g+'/'+g.split('/')[-1]+'.alg.clean -m MF --prefix '+g+'/model'
         print(cmd, file=outfile)
