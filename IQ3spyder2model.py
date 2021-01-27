@@ -27,8 +27,8 @@ def check_spider(group,num_seq):
         if toprint == False:
             print('unfinished job:',log)
             num_seq.add(log)
-            cmd = 'rm '+group+'/model.*'
-            gmo.run_command(cmd)
+            #cmd = 'rm '+group+'/model.*'
+            #gmo.run_command(cmd)
     return toprint, num_seq
 
 
