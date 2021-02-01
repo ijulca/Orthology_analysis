@@ -5,6 +5,7 @@ Created on Mon Feb  1 14:47:31 2021
 
 @author: ijulca
 """
+import argparse
 import glob
 import sys, os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
