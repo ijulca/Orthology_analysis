@@ -12,7 +12,8 @@ sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py
 import genome_modules as GM
 import general_modules as gmo
 
-trimal = '/home/irene.julca/anaconda/envs/phylo/bin/trimal'
+#trimal = '/home/irene.julca/anaconda/envs/phylo/bin/trimal'
+trimal = 'trimal'
 
 def get_genes(inFile):
     genes = []
@@ -30,7 +31,6 @@ parser.add_argument("-p", "--path", dest="path", required=True, help="path where
 args = parser.parse_args()
 
 path = args.path+'/'
-
 alg = glob.glob(path+'*.alg.metalig')
 algFile = alg[0]
 
@@ -41,8 +41,9 @@ genes = get_genes(tempfasta)
 
 pathFile = glob.glob(path +'*.alg.paths')
 pathFile = pathFile[0]
-files = gmo.load_list(pathFile)
 
+files = gmo.load_list(pathFile)
+print(files)
 for f in files:
     print(f)
     seqs = GM.load_sequences(f)
