@@ -44,6 +44,7 @@ pathFile = pathFile[0]
 files = gmo.load_list(pathFile)
 
 for f in files:
+    print(f)
     seqs = GM.load_sequences(f)
     outfile = open(f,'w')
     for g in genes:
