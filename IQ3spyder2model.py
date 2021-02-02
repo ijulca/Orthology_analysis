@@ -44,7 +44,7 @@ num_seq = set([])
 for g in groups:
     toprint, num_seq = check_spider(g, num_seq)
     if toprint == False:
-        cmd = iqtree+' -s '+g+'/'+g.split('/')[-1]+'.alg.clean -m MF --prefix '+g+'/model'
+        cmd = iqtree+' -s '+g+'/'+g.split('/')[-1]+'.alg.clean -m MF --prefix '+g+'/model -T 4'
         print(cmd, file=outfile)
 outfile.close()
 
