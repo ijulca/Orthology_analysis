@@ -83,7 +83,7 @@ for f in modelFiles:
         model = get_model(f)
         alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
         pref = f.split('model')[0]+'genetree'
-        cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref +' -T 2' ### no bootstrap for less than 4 seq
+        cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref  ### no bootstrap for less than 4 seq
         print(cmd,file=outfile)
     else:
         g+=1
