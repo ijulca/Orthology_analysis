@@ -10,11 +10,14 @@ import genome_modules as GM
 
 def remove_stop(seqs):
     new_seq = {}
+    i = 0
     for s in seqs:
         if seqs[s][-1] == '*':
             new_seq[s] = seqs[s][:-1]
+            i+=1
         else:
             new_seq[s] = seqs[s]
+    print('stop codon removed: ', i, ' from the total:', len(seqs))
     return new_seq
 
 ## main
@@ -30,7 +33,7 @@ seqs = remove_stop(seqs)
 
 outfile = open(inFile + ".changed", "w")
 
-noAA = {"B":0, "J":0, "O":0, "U":0, "Z":0}
+noAA = {"B":0, "J":0, "O":0, "U":0, "Z":0,'*':0}
 
 for s in seqs:
     pep = ''
