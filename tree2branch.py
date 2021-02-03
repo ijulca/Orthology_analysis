@@ -25,6 +25,7 @@ def check_spider(f):
 
 
 def create_allTrees(treeFiles,outFile):
+    print('creating treeFile...')
     outfile = open(outFile, 'w')
     for treeFile in treeFiles:
         totree = check_spider(treeFile.replace('treefile','log'))
@@ -59,7 +60,7 @@ alltreeFile = 'alltree.txt'
 ditFile = 'branch_lenght.txt'
 
 treeFiles = glob.glob(path +'*/*/genetree.treefile')
-
+print('Number of trees found:',len(treeFiles))
 
 if os.path.isfile(alltreeFile) == False:
     create_allTrees(treeFiles,alltreeFile)
