@@ -19,9 +19,10 @@ def spider_model(group,num_seq):
     if os.path.isfile(log) == True:
         with open(log, 'r') as f:
             lines = f.read().splitlines()
-            print('Yessssssssss')
-            print(lines)
-            last_line = lines[-1]
+            if len(lines) != 0:
+                last_line = lines[-1]
+            else:
+                last_line = 'No'
             if 'Date and Time:' in last_line:
                 toprint = True
             elif 'ERROR: There must be at least 3 sequences' in last_line:
