@@ -28,6 +28,7 @@ def create_allTrees(treeFiles,outFile):
     print('creating treeFile...')
     outfile = open(outFile, 'w')
     for treeFile in treeFiles:
+        print(treeFile)
         totree = check_spider(treeFile.replace('treefile','log'))
         if totree == True:
             group = treeFile.split('/')[-2]
@@ -66,9 +67,9 @@ if os.path.isfile(alltreeFile) == False:
     create_allTrees(treeFiles,alltreeFile)
 
 ### analysis
-genetrees = PA.get_trees_from_file(alltreeFile)
-print('Number of tree to be analysed:', len(genetrees))
-get_distFile(genetrees, ditFile)
+# genetrees = PA.get_trees_from_file(alltreeFile)
+# print('Number of tree to be analysed:', len(genetrees))
+# get_distFile(genetrees, ditFile)
 
 #spTree,spe2age = PA.load_species_tree(spTreeFile,'no')
 #print(spe2age)
