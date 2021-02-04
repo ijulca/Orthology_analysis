@@ -42,8 +42,9 @@ def get_distFile(genetrees, outname):
     outfile = open(outname, 'w')
     for group in genetrees:
         tree = genetrees[group]
-        dist = PA.get_average_branchLen(tree)
-        string = group +'\t'+str(dist)
+        dist0 = PA.get_average_branchLen(tree)
+        dist1 = PA.get_average_branchLen(tree,95)
+        string = group +'\t'+str(dist0)+'\t'+str(dist1)
         print(string,file=outfile)
     return outfile
 
