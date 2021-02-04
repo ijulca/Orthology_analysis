@@ -37,6 +37,8 @@ def spider_alg(path):
     if os.path.isfile(log) == True:
         with open(log, 'r') as f:
             lines = f.read().splitlines()
+            print('Yessssssssss')
+            print(lines)
             if 'STEP	Multipple Sequence Alignment	END' in lines[-3]:
                 toprint = True
     return toprint
