@@ -28,8 +28,8 @@ def create_allTrees(treeFiles,outFile):
     print('creating treeFile...')
     outfile = open(outFile, 'w')
     for treeFile in treeFiles:
-        print(treeFile)
         totree = check_spider(treeFile.replace('treefile','log'))
+        print(treeFile, totree)
         if totree == True:
             group = treeFile.split('/')[-2]
             tree = gmo.load_list(treeFile)
