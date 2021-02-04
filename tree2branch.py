@@ -11,9 +11,7 @@ sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py
 import phylome_analysis as PA
 import general_modules as gmo
 
-def check_spider(f):
-    folder = f.split('model')[0]
-    log = folder+'/genetree.log'
+def check_spider(log):
     toprint = False
     if os.path.isfile(log) == True:
         with open(log, 'r') as f:
