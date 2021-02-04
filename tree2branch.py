@@ -27,7 +27,6 @@ def create_allTrees(treeFiles,outFile):
     outfile = open(outFile, 'w')
     for treeFile in treeFiles:
         totree = check_spider(treeFile.replace('treefile','log'))
-        print(treeFile, totree)
         if totree == True:
             group = treeFile.split('/')[-2]
             tree = gmo.load_list(treeFile)
@@ -35,6 +34,8 @@ def create_allTrees(treeFiles,outFile):
                 print(group+'\t'+tree[0],file=outfile)
             else:
                 print('ERROR...', treeFile)
+        else:
+            print('ERROR...bad tree', treeFile)
     outfile.close()
 
 def get_distFile(genetrees, outname):
@@ -55,19 +56,21 @@ args = parser.parse_args()
 path = args.path+'/'
 #spTreeFile = args.spTree
 
+#####outputs
 alltreeFile = 'alltree.txt'
 ditFile = 'branch_lenght.txt'
+####
 
-treeFiles = glob.glob(path +'*/*/genetree.treefile')
-print('Number of trees found:',len(treeFiles))
 
 if os.path.isfile(alltreeFile) == False:
+    treeFiles = glob.glob(path +'*/*/genetree.treefile')
+    print('Number of trees found:',len(treeFiles))
     create_allTrees(treeFiles,alltreeFile)
 
 ### analysis
-# genetrees = PA.get_trees_from_file(alltreeFile)
-# print('Number of tree to be analysed:', len(genetrees))
-# get_distFile(genetrees, ditFile)
+genetrees = PA.get_trees_from_file(alltreeFile)
+print('Number of tree to be analysed:', len(genetrees))
+get_distFile(genetrees, ditFile)
 
 #spTree,spe2age = PA.load_species_tree(spTreeFile,'no')
 #print(spe2age)
