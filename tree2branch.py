@@ -44,7 +44,7 @@ def get_distFile(genetrees, outname):
         tree = genetrees[group]
         dist = PA.get_average_branchLen(tree)
         string = group +'\t'+str(dist)
-        print(string)
+        print(string,file=outfile)
     return outfile
 
 ### main
