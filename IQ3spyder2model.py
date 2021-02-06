@@ -48,16 +48,21 @@ def spider_alg(path):
         
 def spider_codemlF(folder):
     log = folder+'/mlcM1'
-    toprint = False
-    if os.path.isfile(log) == True:
-        with open(log, 'r') as f:
-            lines = f.read().splitlines()
-            if 'Time used:' in lines[-1]:
-                for l in lines:
-                    if 'w ratios as labels for TreeView' in l:
-                        toprint = True
-            else:
-                print('ERROR last line....', folder)
+    tree = folder+'/genetree.treefile'
+    if os.path.isfile(tree) == True:
+        toprint = False
+        if os.path.isfile(log) == True:
+            with open(log, 'r') as f:
+                lines = f.read().splitlines()
+                if 'Time used:' in lines[-1]:
+                    for l in lines:
+                        if 'w ratios as labels for TreeView' in l:
+                            toprint = True
+                else:
+                    print('ERROR last line....', folder)
+    else:
+        toprint = True
+        print('Errro no tree', folder)
     return toprint
 
 def change_master_codeml(masterctl,outpref, alg, tree):
@@ -88,10 +93,13 @@ def spider_codemlP(folder):
         if os.path.isfile(log) == True:
             # items = [x for x in range(0,num)]
             # pairs = [(items[i],items[j]) for i in range(len(items)) for j in range(i+1, len(items))]
-            with open(log, 'r') as f:
-                lines = f.read().splitlines()
-                if len(lines) == 1:
-                    toprint = True
+            value = 0
+            for line in open(log):
+                line = line.strip()
+                if line != '':
+                    value += 1
+            if value == 1:
+                toprint = True
     else:
         toprint = True
     return toprint
