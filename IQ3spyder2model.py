@@ -94,8 +94,8 @@ def spider_codemlP(folder):
 
 parser = argparse.ArgumentParser(description="spyder for aligment and model")
 parser.add_argument("-p", "--path", dest="path", default='./Data/', help="path where to create the folders")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="tag to get unfinished jobs for m=model, a=aligment,c1=codemlFree")
-parser.add_argument("-c", "--config", dest="config", default = 'no',help="give config file for tag: a=aligment or c1=codemlFree ")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="tag to get unfinished jobs for m=model, a=aligment,c1=codemlFree,c2=codemlPairwise")
+parser.add_argument("-c", "--config", dest="config", default = 'no',help="give config file for tag: a=aligment, c1=codemlFree, c2=codemlPairwise")
 args = parser.parse_args()
 
 path = args.path
