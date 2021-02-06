@@ -82,14 +82,15 @@ def spider_codemlP(folder):
         with open(alg, 'r') as f:
             lines = f.read().splitlines()
             num = lines[0].split(' ')[1]
-        items = [x for x in range(0,num)]
-        pairs = [(items[i],items[j]) for i in range(len(items)) for j in range(i+1, len(items))]
-        r_pair = 0
-        for line in open(log):
-            line = line.strip()
-            r_pair +=1
-        if pairs == r_pair:
-            toprint = True
+        if num == 2:
+            # items = [x for x in range(0,num)]
+            # pairs = [(items[i],items[j]) for i in range(len(items)) for j in range(i+1, len(items))]
+            r_pair = 0
+            for line in open(log):
+                line = line.strip()
+                r_pair +=1
+            if r_pair==1: #len(pairs)
+                toprint = True
     return toprint
 
 parser = argparse.ArgumentParser(description="spyder for aligment and model")
