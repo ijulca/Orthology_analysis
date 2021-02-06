@@ -76,21 +76,21 @@ def change_master_codeml(masterctl,outpref, alg, tree):
     
 def spider_codemlP(folder):
     log = folder+'dnds_pairs.txt'
-    toprint = False
-    if os.path.isfile(log) == True:
-        alg = folder+'/'+folder.split('/')[-1]+'.alg.clean_cds'
-        with open(alg, 'r') as f:
-            lines = f.read().splitlines()
-            num = lines[0].split(' ')[1]
-        if num == 2:
+    alg = folder+'/'+folder.split('/')[-1]+'.alg.clean_cds'
+    with open(alg, 'r') as f:
+        lines = f.read().splitlines()
+        num = lines[0].split(' ')[1]
+    if num == 2:
+        toprint = False
+        if os.path.isfile(log) == True:
             # items = [x for x in range(0,num)]
             # pairs = [(items[i],items[j]) for i in range(len(items)) for j in range(i+1, len(items))]
-            r_pair = 0
-            for line in open(log):
-                line = line.strip()
-                r_pair +=1
-            if r_pair==1: #len(pairs)
-                toprint = True
+            with open(log, 'r') as f:
+                lines = f.read().splitlines()
+                if len(lines) == 1:
+                    toprint = True
+    else:
+        toprint = True
     return toprint
 
 parser = argparse.ArgumentParser(description="spyder for aligment and model")
