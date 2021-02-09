@@ -12,7 +12,8 @@ import general_modules as gmo
 
 iqtree = '/home/irene.julca/Programs/iqtree-2.1.2-Linux/bin/iqtree2'
 algtool = '/home/irene.julca/Programs/git_repository/phylome_analysis/salva_scripts/12.IndividualStep.Alignments.py'
-codeml_py = "/home/irene.julca/Programs/git_repository/Codeml_auto/run_codeml.py"
+#codeml_py = "/home/irene.julca/Programs/git_repository/Codeml_auto/run_codeml.py"
+codeml_py = "/home/ijulca/Programs/git_repository/Codeml_auto/run_codeml.py"
 codemlPair = '/home/irene.julca/Programs/git_repository/Codeml_auto/run_alg2dnds.py'
 
 def spider_model(group,num_seq):
@@ -144,16 +145,15 @@ elif tag == 'c1':
     for folder in groups:
         toprint = spider_codemlF(folder)
         if toprint == False:
+            cFile = configFile
             if '/' in configFile:
-                outpref = folder + '/'+configFile.split('/')[-1]
-            else:
-                outpref = folder + '/'+configFile
-            
+                cFile = configFile.split('/')[-1]
+            outpref = folder + '/'+cFile
             group = folder.split('/')[-1]
             alg = group+'.alg.clean_cds.phy'
             treefile = 'genetree.treefile'
             change_master_codeml(configFile,outpref, alg, treefile)
-            cmd = codeml_py+' -p '+folder+'/ -c '+outpref
+            cmd = codeml_py+' -p '+folder+'/ -c '+cFile
             print(cmd,file=outfile)
     outfile.close()
 elif tag == 'c2':
