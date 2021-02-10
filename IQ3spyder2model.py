@@ -12,8 +12,8 @@ import general_modules as gmo
 
 iqtree = '/home/irene.julca/Programs/iqtree-2.1.2-Linux/bin/iqtree2'
 algtool = '/home/irene.julca/Programs/git_repository/phylome_analysis/salva_scripts/12.IndividualStep.Alignments.py'
-#codeml_py = "/home/irene.julca/Programs/git_repository/Codeml_auto/run_codeml.py"
-codeml_py = "/home/ijulca/Programs/git_repository/Codeml_auto/run_codeml.py"
+codeml_py = "/home/irene.julca/Programs/git_repository/Codeml_auto/run_codeml.py"
+#codeml_py = "/home/ijulca/Programs/git_repository/Codeml_auto/run_codeml.py"
 codemlPair = '/home/irene.julca/Programs/git_repository/Codeml_auto/run_alg2dnds.py'
 
 def spider_model(group,num_seq):
