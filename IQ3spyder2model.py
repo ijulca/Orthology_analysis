@@ -55,12 +55,13 @@ def spider_codemlF(folder):
         if os.path.isfile(log) == True:
             with open(log, 'r') as f:
                 lines = f.read().splitlines()
-                if 'Time used:' in lines[-1]:
-                    for l in lines:
-                        if 'w ratios as labels for TreeView' in l:
-                            toprint = True
-                else:
-                    print('ERROR last line....', folder)
+                if len(lines) >0:
+                    if 'Time used:' in lines[-1]:
+                        for l in lines:
+                            if 'w ratios as labels for TreeView' in l:
+                                toprint = True
+                    else:
+                        print('ERROR last line....', folder)
     else:
         toprint = True
         print('Errro no tree', folder)

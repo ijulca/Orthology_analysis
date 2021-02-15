@@ -40,13 +40,22 @@ def create_allTrees(treeFiles,outFile):
 
 def get_distFile(genetrees, outname):
     outfile = open(outname, 'w')
+    i = 0
     for group in genetrees:
         tree = genetrees[group]
         dist0 = PA.get_average_branchLen(tree,0)
         dist1 = PA.get_average_branchLen(tree,95)
-        string = group +'\t'+str(dist0)+'\t'+str(dist1)
+        if len(dist0) == 0:
+            dist0 = ['NA']
+        if len(dist1) == 0:
+            dist1 = ['NA']
+        dist0 = [str(x) for x in dist0]
+        dist1 = [str(x) for x in dist1]
+        string = group +'\t'+str(';'.join(dist0))+'\t'+str(';'.join(dist1))
         print(string,file=outfile)
+    print(i)
     return outfile
+
 
 ### main
 parser = argparse.ArgumentParser(description="get the gene trees and analysis")
