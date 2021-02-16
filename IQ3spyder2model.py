@@ -88,7 +88,6 @@ def spider_codemlP(folder):
         with open(alg, 'r') as f:
             lines = f.read().splitlines()
             num = int(lines[0].split(' ')[1])
-            print(num)
     else:
         num = 0
     if num != 0: # ==2
@@ -97,6 +96,7 @@ def spider_codemlP(folder):
             with open(log, 'r') as f:
                 lines = f.read().splitlines()
             pairs = (num*(num-1))/2
+            print(folder,pairs,len(lines))
             if pairs == len(lines):
                 toprint = True
     else:
