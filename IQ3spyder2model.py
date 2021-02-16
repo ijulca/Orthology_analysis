@@ -82,7 +82,7 @@ def change_master_codeml(masterctl,outpref, alg, tree):
 	outfile.close()
     
 def spider_codemlP(folder):
-    log = folder+'dnds_pairs.txt'
+    log = folder+'/dnds_pairs.txt'
     alg = folder+'/'+folder.split('/')[-1]+'.alg.clean_cds'
     if os.path.isfile(alg) == True:
         with open(alg, 'r') as f:
