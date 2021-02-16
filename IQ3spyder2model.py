@@ -96,7 +96,6 @@ def spider_codemlP(folder):
             with open(log, 'r') as f:
                 lines = f.read().splitlines()
             pairs = (num*(num-1))/2
-            print(folder,pairs,len(lines))
             if pairs == len(lines):
                 toprint = True
     else:
