@@ -87,7 +87,7 @@ def spider_codemlP(folder):
     if os.path.isfile(alg) == True:
         with open(alg, 'r') as f:
             lines = f.read().splitlines()
-            num = lines[0].split(' ')[1]
+            num = int(lines[0].split(' ')[1])
     else:
         num = 0
     if num != 0: # ==2
