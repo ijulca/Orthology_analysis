@@ -90,17 +90,13 @@ def spider_codemlP(folder):
             num = lines[0].split(' ')[1]
     else:
         num = 0
-    if num == 2:
+    if num != 0: # ==2
         toprint = False
         if os.path.isfile(log) == True:
-            # items = [x for x in range(0,num)]
-            # pairs = [(items[i],items[j]) for i in range(len(items)) for j in range(i+1, len(items))]
-            value = 0
-            for line in open(log):
-                line = line.strip()
-                if line != '':
-                    value += 1
-            if value == 1:
+            with open(log, 'r') as f:
+                lines = f.read().splitlines()
+            pairs = (num*(num-1))/2
+            if pairs == len(lines):
                 toprint = True
     else:
         toprint = True
