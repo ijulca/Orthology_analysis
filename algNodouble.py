@@ -36,7 +36,7 @@ args = parser.parse_args()
 
 path = args.path
 
-files = glob.glob(path)
+files = glob.glob(path+'/*')
 
 for f in files:
     seq = GM.load_sequences(f)
