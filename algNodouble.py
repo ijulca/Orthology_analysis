@@ -23,7 +23,7 @@ def get_doubles(data):
     seqs = []
     for sp in species:
         if len(species[sp]) !=1:
-            s = random.choice(species[sp])
+            s = random.choice(list(species[sp]))
             seqs += [x for x in species[sp] if x != s]
     return seqs
             
