@@ -43,7 +43,7 @@ files = glob.glob(path+'/*')
 for f in files:
     seq = GM.load_sequences(f)
     doubles,sp = get_doubles(seq)
-    if sp == 1:
+    if sp <= 2:
         if len(doubles) != 0:
             print(f)
             outfile = open(f+'.2','w')
