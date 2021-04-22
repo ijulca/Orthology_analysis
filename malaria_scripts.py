@@ -222,12 +222,14 @@ outenrichplot = outpath+'Table_dots.svg' ## p-values per node
 #                     calc = len(new_nodes2genes[n])
 #                     if calc >= obs: ### for enrichment
 #                         values[n]+=1
-#         pval, nodenames = OM.get_p(values, x)
-#         padj = OM.get_p_adj(pval)
-#         i = 0
-#         for n in nodenames:
-#             if padj[i]  < 0.05:
-#                 dades[sp][loc][n][1] = padj[i]
+        # pval, nodenames = OM.get_p(values, x)
+        # padj = OM.get_p_adj(pval)
+        # i = 0
+        # for n in nodenames:
+        #     if padj[i]  < 0.05:
+        #         dades[sp][loc][n][1] = padj[i]
+        #     i+=1
+
 
 # locs = parasite +exported
 
