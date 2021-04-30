@@ -297,12 +297,13 @@ nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_1
 sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','NODE_16','PLAKH'],'31271':nodes+['NODE_15','NODE_17','31271'], 
             '1323249':nodes+['NODE_15','NODE_17','NODE_18','1323249'],'PLABA':nodes+['NODE_15','NODE_17','NODE_18','PLABA']}
 
-x=10000
+x=1000
 
 parasite = ['PARASITE','PPM']
 # exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
-exported = ["GHOST","HCC","VESICLE+Cleft's"]
 peripheral = ["PV","PVM"]
+exported = ["HCC","VESICLE+Cleft's","GHOST"]
+
 
 sp2gene2loc = get_sp2gene2locEnrich(infiles) ## Species, genes to loc
 sp2loc2gene = {}
