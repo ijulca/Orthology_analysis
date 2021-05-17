@@ -191,6 +191,8 @@ def transform_table_dot(inFile):
             for v in values:
                 if v >=0.8:
                     v = 1
+                elif v == 0:
+                    v = v
                 elif v>=0.6 and v<0.8:
                     v=0.9
                 elif v>=0.4 and v<0.6:
@@ -421,38 +423,72 @@ table6 = outpath +'Table_6.csv'
 ## plot dots
 ##
 
-transform_table_dot(table3)
-table = table3.split('.')[0]+'_transform.csv'
+#transform_table_dot(table3)
+# table = table3.split('.')[0]+'_transform.csv'
 
-df1 = pd.read_csv(table,sep='\t',header=0,index_col=0)
-df2 = pd.read_csv(table4,sep='\t',header=0,index_col=0)
+# df1 = pd.read_csv(table,sep='\t',header=0,index_col=0)
+# df2 = pd.read_csv(table4,sep='\t',header=0,index_col=0)
 
-ylabels = df1.index.values
-xlabels = df1.columns.values
-M,N = len(xlabels),len(ylabels)
-x, y = np.meshgrid(np.arange(M), np.arange(N))
+# ylabels = df1.index.values
+# xlabels = df1.columns.values
+# M,N = len(xlabels),len(ylabels)
+# x, y = np.meshgrid(np.arange(M), np.arange(N))
 
-fig, ax = plt.subplots(figsize=(21.3,9))
+# fig, ax = plt.subplots(figsize=(21.3,9))
 
-R = df1.to_numpy()/2
+# R = df1.to_numpy()/2
 
-circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
-col = PatchCollection(circles, array=df2.to_numpy().flatten(), cmap="RdYlGn")
-ax.add_collection(col)
+# circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
+# col = PatchCollection(circles, array=df2.to_numpy().flatten(), cmap="cividis")
+# ax.add_collection(col)
 
-ax.set(xticks=np.arange(M), yticks=np.arange(N),
-        xticklabels=xlabels, yticklabels=ylabels)
-ax.set_xticks(np.arange(M+1)-0.5, minor=True)
-ax.set_yticks(np.arange(N+1)-0.5, minor=True)
-ax.grid(which='minor')
-plt.xticks(rotation=45, ha='right')
+# ax.set(xticks=np.arange(M), yticks=np.arange(N),
+#         xticklabels=xlabels, yticklabels=ylabels)
+# ax.set_xticks(np.arange(M+1)-0.5, minor=True)
+# ax.set_yticks(np.arange(N+1)-0.5, minor=True)
+# ax.grid(which='minor')
+# plt.xticks(rotation=45, ha='right')
 
-fig.colorbar(col)
-plt.savefig(outenrichplot,bbox_inches = "tight")
-plt.show()
+# fig.colorbar(col)
+# plt.savefig(outenrichplot,bbox_inches = "tight")
+# plt.show()
 
 ### Plot Anthony table
-inFile = "/home/ijulca/projects/Malaria/analysis/Classeur2.csv"
+# inFile = "/home/ijulca/projects/Malaria/analysis/Classeur2.csv"
+# #transform_table_dot(inFile)
+# table = inFile.split('.')[0]+'_transform.csv'
+# outfig = '/home/ijulca/projects/Malaria/analysis/Classeur2.svg'
+
+# df1 = pd.read_csv(table,sep='\t',header=0,index_col=0)
+
+# ylabels = df1.index.values
+# xlabels = df1.columns.values
+# M,N = len(xlabels),len(ylabels)
+# x, y = np.meshgrid(np.arange(M), np.arange(N))
+
+# fig, ax = plt.subplots(figsize=(14,3.5))
+
+# R = df1.to_numpy()/2
+
+# circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
+# col = PatchCollection(circles, array=df1.to_numpy().flatten(), cmap="cividis")
+# ax.add_collection(col)
+
+# ax.set(xticks=np.arange(M), yticks=np.arange(N),
+#         xticklabels=xlabels, yticklabels=ylabels)
+# ax.set_xticks(np.arange(M+1)-0.5, minor=True)
+# ax.set_yticks(np.arange(N+1)-0.5, minor=True)
+# ax.grid(which='minor')
+# plt.xticks(rotation=45, ha='right')
+
+# fig.colorbar(col)
+# plt.savefig(outfig,bbox_inches = "tight")
+# plt.show()
+
+
+#### Ploat Anthony table2
+
+inFile = "/home/ijulca/projects/Malaria/analysis/Classeur22.csv"
 transform_table_dot(inFile)
 table = inFile.split('.')[0]+'_transform.csv'
 outfig = '/home/ijulca/projects/Malaria/analysis/Classeur2.svg'
@@ -464,12 +500,12 @@ xlabels = df1.columns.values
 M,N = len(xlabels),len(ylabels)
 x, y = np.meshgrid(np.arange(M), np.arange(N))
 
-fig, ax = plt.subplots(figsize=(14,3.5))
+fig, ax = plt.subplots(figsize=(5.5,5))
 
 R = df1.to_numpy()/2
 
 circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
-col = PatchCollection(circles, array=df1.to_numpy().flatten(), cmap="RdYlGn")
+col = PatchCollection(circles, array=df1.to_numpy().flatten(), cmap="cividis")
 ax.add_collection(col)
 
 ax.set(xticks=np.arange(M), yticks=np.arange(N),
@@ -482,7 +518,6 @@ plt.xticks(rotation=45, ha='right')
 fig.colorbar(col)
 plt.savefig(outfig,bbox_inches = "tight")
 plt.show()
-
 
 
 ###################### 7) Table 5 and 6
