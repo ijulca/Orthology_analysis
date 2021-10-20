@@ -9,6 +9,8 @@ Created on Wed Oct 20 11:29:48 2021
 import argparse
 import subprocess
 
+api_key='67b44932b5a9b8eb90b873da1c6129637508'
+
 ### main
 
 parser = argparse.ArgumentParser(description="get the data type of the bioproject")
@@ -17,7 +19,7 @@ args = parser.parse_args()
 
 key = args.id
 
-cmd = "efetch -db BioProject -id "+key+" -format xml | xtract -pattern DocumentSummary -element DataType"
+cmd = "efetch -db BioProject&api_key="+api_key+" -id "+key+" -format xml | xtract -pattern DocumentSummary -element DataType"
 out = subprocess.getoutput(cmd)
 
 outfile = open(key+'.info','w')
