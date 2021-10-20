@@ -15,7 +15,7 @@ Entrez.email = 'irene.julcac@gmail.com'
 
 def get_lineage(inFile):
     outfile = open(inFile+'.lineage_class', 'w')
-    tax_ids = set(gmo.load_list(inFile, sep='\t', remove='taxid'))
+    tax_ids = set(gmo.load_list(inFile, sep='\t'))
     for tax in tax_ids:
         handle = Entrez.efetch('taxonomy', id=tax, rettype='xml')
         response = Entrez.read(handle)
