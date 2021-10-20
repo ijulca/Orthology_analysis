@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 key = args.id
 
-cmd = "efetch -db BioProject&api_key="+api_key+" -id "+key+" -format xml | xtract -pattern DocumentSummary -element DataType"
+cmd = "efetch -db BioProject -id "+key+" -format xml | xtract -pattern DocumentSummary -element DataType"
 out = subprocess.getoutput(cmd)
 
 outfile = open(key+'.info','w')
