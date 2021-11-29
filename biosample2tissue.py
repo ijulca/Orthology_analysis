@@ -18,13 +18,25 @@ def get_pref(inFile):
     pref = pref.split('.')[0]
     return pref
 
-def get_sampleFromFile(inFile, key):
+def wfile2sample(inFile, key):
     sample, source ='','No'
     for line in open(inFile):
         line = line.strip()
         if key in line:
             source = key.replace('<th>','')
             sample = line.split(key)[1].split('</td')[0].split('>')[-1].strip()
+            if sample == 'missing':
+                    sample = ''
+    return sample,source
+
+def bfile2sample(inFile):
+    key = 'display_name="tissue"'
+    sample, source ='','No'
+    for line in open(inFile):
+        line = line.strip()
+        if key in line:
+            source = 'tissue'
+            sample = line.split(key)[1].split('<')[0].replace('>','').strip()
             if sample == 'missing':
                     sample = ''
     return sample,source
@@ -57,28 +69,34 @@ def get_sample_name(sample):
 ### main
 parser = argparse.ArgumentParser(description="get the name of the tissue from the SAMN file (sample name)")
 parser.add_argument("-p", "--path", dest="path", required=True, help="path to the folder containing the SAMN files")
+parser.add_argument("-t", "--tag", dest="tag", default='biosample', help="source wget or biosample. Default biosample")
 args = parser.parse_args()
 
 path = args.path
+tag = args.tag
 
 outfile = open('sample_names.txt','w')
 
 files = glob.glob(path+'/*')
 print('number of files to analize:', len(files))
 
+
 for inFile in files:
     pref = get_pref(inFile)
     sources = ['<th>tissue','<th>source name','<th>sample name','<th>isolation source']
     sample, source ='','No'
-    for s in sources:
-        if sample =='':
-            sample, source = get_sampleFromFile(inFile, s)
-            
-    if sample == '':
-        print(pref)
-    else:
-        string = pref +'\t'+sample+'\t'+get_sample_name(sample)+'\t'+source
-        print(string,file=outfile)
+    if tag == 'wget':
+        for s in sources:
+            if sample =='':
+                sample, source = wfile2sample(inFile, s)
+    elif tag == 'biosample':
+        sample, source = bfile2sample(inFile)
+        
+        if sample == '':
+            print(pref)
+        else:
+            string = pref +'\t'+sample+'\t'+get_sample_name(sample)+'\t'+source
+            print(string,file=outfile)
 
 outfile.close()
 print('End...')
