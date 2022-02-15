@@ -85,7 +85,7 @@ def get_sp2gene2loc(files):
                 else:
                     pass ## not include the genes without localization
                     
-        #print(sp,len(table[sp]))
+        print(sp,len(table[sp]))
     return table
 
 def get_sp2gene2locEnrich(files):
@@ -99,7 +99,7 @@ def get_sp2gene2locEnrich(files):
             if data[0] != 'GeneID':
                 if len(data) == 8:
                     key = data[0]+'-'+sp
-                    if data[7] != 'EXPORTED' and data[7] != 'PV or PVM': ### remove this loc
+                    if data[7] != 'EXPORTED' and data[7] != 'PV or PVM': ### remove this loc because are ambiguos
                         if data[7] == 'PARASITE' or data[7] == 'parasite':
                             data[7] = 'PARASITE'
                         elif data[7] == 'VESICLE' or data[7] == "Cleft's":
@@ -239,6 +239,8 @@ treeNodes = outpath+'tree_percentageNodes.svg'
 table1 = outpath+'Table_1.csv'
 table2 = outpath+'Table_2.csv'
 
+tablex2 = outpath+'Table_X2.csv'
+tablex3 = outpath+'Table_X3.csv' ## table summary including number of genes, percentage of genes, and p-val
 ### enrichment
 table3 = outpath+'Table_3.csv' ## percentage of genes per node
 table4 = outpath+'Table_4.csv' ## p-values per node
@@ -330,73 +332,89 @@ table6 = outpath +'Table_6.csv'
 
 # ##### 6) Calculate enrichment per loc per node:
 
-# sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table. Species, genes to node
-####sp2gene2node = get_sp2gene2node2(outGene2node) ### all genes of the species
+species = OM.loadTaxa(taxaFile)
+    
+sp2gene2node = get_sp2gene2node(nodeFiles) ### genes only from Omar table. Species, genes to node
+###sp2gene2node = get_sp2gene2node2(outGene2node) ### all genes of the species
 
-# nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13','NODE_15','NODE_16','NODE_17','NODE_18']
-# sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','NODE_16','PLAKH'],'31271':nodes+['NODE_15','NODE_17','31271'], 
-#             '1323249':nodes+['NODE_15','NODE_17','NODE_18','1323249'],'PLABA':nodes+['NODE_15','NODE_17','NODE_18','PLABA']}
+nodes = ['NODE_1', 'NODE_3','NODE_4','NODE_6','NODE_7','NODE_8','NODE_9','NODE_11','NODE_13','NODE_15','NODE_16','NODE_17','NODE_18']
+sp2nodes = {'PLAF7':nodes+['PLAF7'],'PLAKH':nodes+['NODE_15','NODE_16','PLAKH'],'31271':nodes+['NODE_15','NODE_17','31271'], 
+            '1323249':nodes+['NODE_15','NODE_17','NODE_18','1323249'],'PLABA':nodes+['NODE_15','NODE_17','NODE_18','PLABA']}
 
-# x=10000
+node2phylo = {'NODE_1':'Eukaryota','NODE_3':'SAR','NODE_4':'Alveolata','NODE_6':'Myzozoa','NODE_7':'Myzozoa',
+              'NODE_8':'Apicomplexa','NODE_9':'Coccidiomorpha','NODE_11':'Haematozoa','NODE_13':'Plasmodium',
+              'NODE_15':'Non-falciparum','NODE_16':'P. knowlesi/P. vivax','NODE_17':'Rodent Plasmodium','NODE_18':'P. berghei/P. yoelii',
+              'PLAF7':'P. falciparum','PLAKH':'P. knowlesi','1323249':'P. yoelii','PLABA':'P. berghei','31271':'P. chabaudi'}
 
-# parasite = ['PARASITE','PPM']
-# # exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
-# peripheral = ["PV","PVM"]
-# exported = ["HCC","VESICLE+Cleft's","GHOST"]
+x=10000  # number of replicates for the enrichment analysis
+
+parasite = ['PARASITE','PPM']
+# exported = ["Cleft's","EXPORTED","GHOST","HCC","PV","PVM","PV or PVM","VESICLE"]
+peripheral = ["PV","PVM"]
+exported = ["HCC","VESICLE+Cleft's","GHOST"]
 
 
-# sp2gene2loc = get_sp2gene2locEnrich(infiles) ## Species, genes to loc
-# sp2loc2gene = {}
+sp2gene2loc = get_sp2gene2locEnrich(infiles) ## Species, genes to loc
 
-# for sp in sp2gene2loc:
-#     sp2loc2gene[sp] = {}
-#     for g in sp2gene2loc[sp]:
-#         loc = sp2gene2loc[sp][g]
-#         if loc not in sp2loc2gene[sp]:
-#             sp2loc2gene[sp][loc] = set([])
-#         sp2loc2gene[sp][loc].add(g)
+sp2loc2gene = {}
+for sp in sp2gene2loc:
+    sp2loc2gene[sp] = {}
+    for g in sp2gene2loc[sp]:
+        loc = sp2gene2loc[sp][g]
+        if loc not in sp2loc2gene[sp]:
+            sp2loc2gene[sp][loc] = set([])
+        sp2loc2gene[sp][loc].add(g)
 
-# dades = {}
-# for sp in sp2loc2gene:
-#     #spgenes = list(sp2gene2node[sp].keys()) ### all proteome
-#     spgenes = list(sp2gene2loc[sp].keys()) ## only genes with localization
-#     #spgenes = list(sp2loc2gene[sp]['PARASITE'])+list(sp2loc2gene[sp]['PPM']) ### using this loc as population
-#     print(sp,len(spgenes))
-#     dades[sp] = {}
-#     for loc in sp2loc2gene[sp]:
-#         dades[sp][loc] = {}
-#         genes = sp2loc2gene[sp][loc]
-#         #print(loc,len(genes))
-#         nodes2genes = OM.get_spe_node(genes,sp2gene2node[sp])
-#         for n in nodes2genes:
-#             dades[sp][loc][n] = [len(nodes2genes[n])/len(genes),0.1]  ### len(genes) percentage relative to the location, len(spgenes) ## relative to species
-#         values = {}
-#         for i in range(0, x): 
-#             new_genes = random.sample(spgenes, len(genes))
-#             new_nodes2genes = OM.get_spe_node(new_genes,sp2gene2node[sp])
-#             for n in nodes2genes:
-#                 if n in new_nodes2genes:
-#                     if n not in values:
-#                         values[n] = 0
-#                     obs = len(nodes2genes[n])
-#                     calc = len(new_nodes2genes[n])
-#                     if calc >= obs: ### for enrichment
-#                         values[n]+=1
-#         pval, nodenames = OM.get_p(values, x)
-#         padj = OM.get_p_adj(pval)
-#         i = 0
-#         for n in nodenames:
-#             if padj[i]  < 0.05:
-#                 dades[sp][loc][n][1] = padj[i]
-#             i+=1
+outfile = open(tablex2,'w')
+print('Species\tGene\tSubcellular fraction\tPhylostratum',file=outfile)
+dades = {}
+for sp in sp2loc2gene:
+    ##spgenes = list(sp2gene2node[sp].keys()) ### all proteome
+    spgenes = list(sp2gene2loc[sp].keys()) ## only genes with localization
+    ##spgenes = list(sp2loc2gene[sp]['PARASITE'])+list(sp2loc2gene[sp]['PPM']) ### using this loc as population
+    print(sp,len(spgenes),sep='\t')
+    dades[sp] = {}
+    for loc in sp2loc2gene[sp]:
+        dades[sp][loc] = {}
+        genes = sp2loc2gene[sp][loc]
+        for g in genes:
+            string = 'P. '+species[sp].split(' ')[1]+'\t'+g.split('-')[0]+'\t'+loc+'\t'+node2phylo[sp2gene2node[sp][g]]
+            print(string,file=outfile)
+        #print(sp,loc,len(genes), sep='\t')
+        nodes2genes = OM.get_spe_node(genes,sp2gene2node[sp])
+        for n in nodes2genes:
+            dades[sp][loc][n] = [len(nodes2genes[n])/len(genes),0.1,0.1,len(nodes2genes[n])]  ### len(genes) percentage relative to the location, len(spgenes) ## relative to species
+        values = {}
+        for i in range(0, x): 
+            new_genes = random.sample(spgenes, len(genes))  
+            new_nodes2genes = OM.get_spe_node(new_genes,sp2gene2node[sp])
+            for n in nodes2genes:
+                if n in new_nodes2genes:
+                    if n not in values:
+                        values[n] = 0
+                    obs = len(nodes2genes[n])
+                    calc = len(new_nodes2genes[n])
+                    if calc >= obs: ### for enrichment
+                        values[n]+=1
+        pval, nodenames = OM.get_p(values, x)
+        padj = OM.get_p_adj(pval)
+        i = 0
+        for n in nodenames:
+            # if padj[i]  < 0.05: ## include this when creating table3 and table4, remove for tablex3
+            dades[sp][loc][n][1] = padj[i]
+            dades[sp][loc][n][2] = pval[i]
+            i+=1
+outfile.close()
 
-# locs = parasite+peripheral+exported
+locs = parasite+peripheral+exported
+
+plasmo = ['PLAF7','PLAKH','1323249','PLABA','31271']
+nodesall = nodes+plasmo
+nodesall.reverse()
 
 # outfile1 = open(table3, 'w')
 # outfile2 = open(table4, 'w')
-# plasmo = ['PLAF7','PLAKH','1323249','PLABA','31271']
-# nodesall = nodes+plasmo
-# nodesall.reverse()
+
 # head = 'Node'
 # for loc in locs:
 #     for sp in plasmo:
@@ -410,7 +428,7 @@ table6 = outpath +'Table_6.csv'
 #     for loc in locs:
 #         for sp in plasmo:
 #             if n in dades[sp][loc]:
-#                 num1,num2=dades[sp][loc][n][0],dades[sp][loc][n][1]
+#                 num1,num2=dades[sp][loc][n][0],dades[sp][loc][n][1] #### percentage, p-value (enrichment)
 #             else:
 #                 num1,num2=0,0.1
 #             string1 += '\t'+str(num1)
@@ -419,7 +437,23 @@ table6 = outpath +'Table_6.csv'
 #     print(string2,file=outfile2)
 # outfile1.close()
 # outfile2.close()
-    
+
+## this is tablex3
+outfile = open(tablex3,'w')
+print('Phylostratum\tSpecies\tSubcellular fraction\tN genes\t% genes\tp-value\tp-adj',file=outfile)
+species = OM.loadTaxa(taxaFile)
+for n in nodesall:
+    for loc in locs:
+        for sp in plasmo:
+            name = 'P.'+species[sp].split(' ')[1]
+            if n in dades[sp][loc]:
+                values = [str(x) for x in dades[sp][loc][n]]
+                string = node2phylo[n]+'\t'+name+'\t'+loc+'\t'+values[3]+'\t'+values[0]+'\t'+values[2]+'\t'+values[1]
+            else:
+                string = node2phylo[n]+'\t'+name+'\t'+loc+'\t'+'0'+'\t'+'0'+'\t'+'-'+'\t'+'-'
+            print(string,file=outfile)
+outfile.close()
+
 ## plot dots
 ##
 
@@ -452,6 +486,35 @@ table6 = outpath +'Table_6.csv'
 # fig.colorbar(col)
 # plt.savefig(outenrichplot,bbox_inches = "tight")
 # plt.show()
+
+
+### Create a supplementary table with the percentage and the p-val
+
+# species = OM.loadTaxa(taxaFile)
+
+# df1 = pd.read_csv(table3,sep='\t',header=0,index_col=0) # % of genes
+# df2 = pd.read_csv(table4,sep='\t',header=0,index_col=0) # p-values
+
+# nodes2loc2per = df1.to_dict('index')
+# nodes2loc2pval = df2.to_dict('index')
+
+# nodes = list(nodes2loc2per.keys())
+# nod1 = [x for x in nodes if 'NODE' in x]
+# nod1 = sorted(nod1, key=lambda x:int(x.split('_')[1]))
+# nod2 = [x for x in nodes if 'NODE' not in x]
+# nodes = nod1+nod2
+
+# for n in nodes:
+#     for k in nodes2loc2per[n]:
+#         loc,sp = k.split('-')
+#         sp = 'P. ' +species[sp].split(' ')[1]
+#         string = 
+
+
+
+
+
+
 
 ### Plot Anthony table
 # inFile = "/home/ijulca/projects/Malaria/analysis/Classeur2.csv"
@@ -488,36 +551,36 @@ table6 = outpath +'Table_6.csv'
 
 #### Ploat Anthony table2
 
-inFile = "/home/ijulca/projects/Malaria/analysis/Classeur22.csv"
-transform_table_dot(inFile)
-table = inFile.split('.')[0]+'_transform.csv'
-outfig = '/home/ijulca/projects/Malaria/analysis/Classeur2.svg'
+# inFile = "/home/ijulca/projects/Malaria/analysis/Classeur22.csv"
+# transform_table_dot(inFile)
+# table = inFile.split('.')[0]+'_transform.csv'
+# outfig = '/home/ijulca/projects/Malaria/analysis/Classeur2.svg'
 
-df1 = pd.read_csv(table,sep='\t',header=0,index_col=0)
+# df1 = pd.read_csv(table,sep='\t',header=0,index_col=0)
 
-ylabels = df1.index.values
-xlabels = df1.columns.values
-M,N = len(xlabels),len(ylabels)
-x, y = np.meshgrid(np.arange(M), np.arange(N))
+# ylabels = df1.index.values
+# xlabels = df1.columns.values
+# M,N = len(xlabels),len(ylabels)
+# x, y = np.meshgrid(np.arange(M), np.arange(N))
 
-fig, ax = plt.subplots(figsize=(5.5,5))
+# fig, ax = plt.subplots(figsize=(5.5,5))
 
-R = df1.to_numpy()/2
+# R = df1.to_numpy()/2
 
-circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
-col = PatchCollection(circles, array=df1.to_numpy().flatten(), cmap="cividis")
-ax.add_collection(col)
+# circles = [plt.Circle((j,i), radius=r) for r, j, i in zip(R.flat, x.flat, y.flat)]
+# col = PatchCollection(circles, array=df1.to_numpy().flatten(), cmap="cividis")
+# ax.add_collection(col)
 
-ax.set(xticks=np.arange(M), yticks=np.arange(N),
-        xticklabels=xlabels, yticklabels=ylabels)
-ax.set_xticks(np.arange(M+1)-0.5, minor=True)
-ax.set_yticks(np.arange(N+1)-0.5, minor=True)
-ax.grid(which='minor')
-plt.xticks(rotation=45, ha='right')
+# ax.set(xticks=np.arange(M), yticks=np.arange(N),
+#         xticklabels=xlabels, yticklabels=ylabels)
+# ax.set_xticks(np.arange(M+1)-0.5, minor=True)
+# ax.set_yticks(np.arange(N+1)-0.5, minor=True)
+# ax.grid(which='minor')
+# plt.xticks(rotation=45, ha='right')
 
-fig.colorbar(col)
-plt.savefig(outfig,bbox_inches = "tight")
-plt.show()
+# fig.colorbar(col)
+# plt.savefig(outfig,bbox_inches = "tight")
+# plt.show()
 
 
 ###################### 7) Table 5 and 6
