@@ -19,18 +19,20 @@ parser = argparse.ArgumentParser(description="get formated fasta files for analy
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="orthogroups file")
 parser.add_argument("-p", "--pepFile", dest="pepFile", required=True, help="db of the proteins")
 parser.add_argument("-c", "--cdsFile", dest="cdsFile", default='', help="db of the cds (optional)")
-parser.add_argument("-s", "--size", dest="size", default='2', help="minimum size to be included. Default=2")
+parser.add_argument("-m", "--minsize", dest="minsize", default='2', help="minimum size to be included. Default=2")
+parser.add_argument("-s", "--maxsize", dest="maxsize", default='100', help="minimum size to be included. Default=100")
 parser.add_argument("-o", "--path", dest="path", default='./Data/', help="path where to create the folders")
 args = parser.parse_args()
 
 orthoFile = args.inFile
 pepFile = args.pepFile
 cdsFile = args.cdsFile
-size = int(args.size)
+minsize = int(args.minsize)
+maxsize = int(args.maxsize)
 outpath = args.path+'/'
 
 ortho2pep = OM.loadOrthofinder(orthoFile)
-ortho2pep = OM.flt_orthogroups(ortho2pep, size)
+ortho2pep = OM.flt_orthogroups(ortho2pep, minsize, maxsize)
 pepDB = GM.load_sequences(pepFile)
 if cdsFile != '':
     cdsDB = GM.load_sequences(cdsFile)
