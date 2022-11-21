@@ -11,7 +11,7 @@ sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py
 import general_modules as gmo
 
 
-iqtree = '/home/irene.julca/Programs/iqtree-2.1.2-Linux/bin/iqtree2'
+iqtree = '/home/irene.julca/Programs/iqtree-1.6.12-Linux/bin/iqtree'
 
 def get_model(inFile):
     for line in open(inFile):
