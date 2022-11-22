@@ -56,7 +56,7 @@ def check_spider(f, num_seq):
 parser = argparse.ArgumentParser(description="get the model and create the jobs for the tree reconstruction")
 parser.add_argument("-p", "--path", dest="path", default='./Data/', help="path where to create the folders")
 parser.add_argument("-s", "--spider", dest="spider", action='store_true', help="if activated will readd the genetree.log files and capture the unfinished jobs")
-parser.add_argument("-t", "--threads", dest="threads", default='2', help="number of threads. Default=2")
+parser.add_argument("-t", "--threads", dest="threads", default='1', help="number of threads. Default=2")
 args = parser.parse_args()
 
 path = args.path
@@ -77,7 +77,7 @@ for f in modelFiles:
         model = get_model(f)
         alg = f.split('model')[0]+f.split('/')[-2]+'.alg.clean'
         pref = f.split('model')[0]+'genetree'
-        cmd = iqtree + ' -s '+alg +' -m '+model+' --prefix '+pref +' -T '+threads+' -B 1000' ### faster -B 1000, but better -b 100
+        cmd = iqtree + ' -s '+alg +' -m '+model+' -pre '+pref +' -nt '+threads+' -bb 1000' ### faster -B 1000, but better -b 100
         print(cmd,file=outfile)
     elif toprint == 2:
         model = get_model(f)
