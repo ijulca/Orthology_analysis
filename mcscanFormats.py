@@ -54,7 +54,7 @@ for line in open(gffFile):
         if data[2] == "gene":
             if data[0] in scaffolds:
                 s, e = data[3], data[4]
-                g = data[8].split("=")[1].split('.')[0]
+                g = data[8].split('gene:')[1].split(';')[0] #data[8].split("=")[1].split('.')[0]
                 g+='_'+taxa
                 genes.add(g)
                 sc = data[0]
