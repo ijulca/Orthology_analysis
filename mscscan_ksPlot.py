@@ -34,6 +34,7 @@ for f in files:
                 spe.append(name)
 
 df = pd.DataFrame(list(zip(spe, ks)), columns =['Spe', 'Ks'])
+plt.rcParams.update({'font.size': 16})
 ax = sns.displot(data=df, kind="kde", x="Ks", hue="Spe")
 
 plt.savefig("Ks_plot.svg")
