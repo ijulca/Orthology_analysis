@@ -5,11 +5,13 @@ Created on Sat Sep 23 18:38:16 2023
 
 @author: ijulca
 """
-import argparse
+import argparse, sys, os
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
+import general_modules as gmo
 
 def load_gff(gffFile):
     gff = {}
@@ -27,7 +29,8 @@ def load_gff(gffFile):
                     pos = str(p1)+'-'+str(p2)
                 else:
                     pos = str(p2)+'-'+str(p1)
-                gene = data[8].split(';')[1].split("=")[1]
+                #gene = data[8].split(';')[1].split("=")[1]
+                gene = data[8].split(";")[0].split(":")[1]
                 sc = data[0]
                 if sc not in gff:
                     gff[sc] = {}
@@ -76,23 +79,67 @@ def analysis_qtl(gffFile, qFile):
                 line +="\tNone"
         print(line, file=outfile)
     outfile.close()
+
+def hogs2hogs(hogs):
+    new_hogs = []
+    for h in hogs:
+        if "." in h:
+            n = h.split(".")
+            hr = n[0]
+            nhog = [n[0]]
+            for e in n[1:]:
+                hr+="."+e
+                nhog.append(hr)
+            new_hogs += [x for x in nhog if x not in new_hogs]
+    return new_hogs
+
+def trait2hog(inFile,hogFile):
+    outfile = open(hogFile.split(".")[0]+'.trait2hog.txt','w')
+    table = {}
+    for line in open(hogFile):
+        line = line.strip()
+        data = line.split("\t")
+        pref = data[0].split("_")[-1]
+        data[0] = "_".join(data[0].split("_")[:-1]) ## remove the sp Prefix
+        if data[0] != 'qseqid':
+            if data[0] not in table:
+                table[data[0]] = data[1]
+            else:
+                print("ERROR... more hogs")
             
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split("\t")
+        if data[0] != 'Trait':
+            if data[4] != "None":
+                hogs = hogs2hogs([table[x] for x in data[4].split(";")])
+                if "," in data[0]:
+                    for e in [x.replace(" ", "") for x in  data[0].split(",")]:
+                        string = e+"_"+pref +"\t"+";".join(hogs)
+                        print(string, file=outfile)
+                else:
+                    string = data[0]+"_"+pref+"\t"+";".join(hogs)
+                    print(string, file=outfile)
+    outfile.close()
+    
+    
 
-# parser = argparse.ArgumentParser(description="get the genes that are in the mQTL")
-# parser.add_argument("-q", "--qFile", dest="qFile", required=True, help="tab separated mqtl file")
-# parser.add_argument("-g", "--genoFile", dest="genoFile", required=True, help="gff file of the genome")
-# args = parser.parse_args()
+parser = argparse.ArgumentParser(description="get the genes that are in the mQTL")
+parser.add_argument("-q", "--qFile", dest="qFile", required=True, help="tab separated mqtl file")
+parser.add_argument("-g", "--genoFile", dest="genoFile", required=True, help="gff file of the genome")
+args = parser.parse_args()
 
-# qFile = args.qFile
-# gffFile = args.genoFile
+qFile = args.qFile
+gffFile = args.genoFile
 
-# analysis_qtl(gffFile, qFile)
+#analysis_qtl(gffFile, qFile)
+trait2hog(qFile,gffFile)
 
-# print("End..")
+print("End..")
 
 ### Plots
-path = "/home/ijulca/projects/QTL/"
-files = glob.glob("/home/ijulca/projects/QTL/*/*_genes.txt")
+# path = "/home/ijulca/projects/QTL/"
+# files = glob.glob("/home/ijulca/projects/QTL/*/*_genes.txt")
 
 # table = {"name":[], "qtlsize":[], 'genes':[]}
 # for f in files:
@@ -125,49 +172,49 @@ files = glob.glob("/home/ijulca/projects/QTL/*/*_genes.txt")
 # plt.savefig(path+"genenumber.png", bbox_inches='tight')
 # plt.show()
 
-table = {}
-for f in files:
-    sp = f.split("/")[-2].split("_")[0]
-    if sp not in table:
-        table[sp] = set()
-    for line in open(f):
-        line = line.strip()
-        data = line.split("\t")
-        if data[0] != 'Trait':
-            if "," in data[0]:
-                for n in data[0].split(","):
-                    table[sp].add(n.strip())
-            else:
-                table[sp].add(data[0].strip())
-names = {}
-for line in open(path+"traits_ontology.txt"):
-    line = line.strip()
-    data = line.split("\t")
-    n = data[1].split(";")[0]
-    if n not in names:
-        names[n] = set()
-    names[n].add(data[0])
+# table = {}
+# for f in files:
+#     sp = f.split("/")[-2].split("_")[0]
+#     if sp not in table:
+#         table[sp] = set()
+#     for line in open(f):
+#         line = line.strip()
+#         data = line.split("\t")
+#         if data[0] != 'Trait':
+#             if "," in data[0]:
+#                 for n in data[0].split(","):
+#                     table[sp].add(n.strip())
+#             else:
+#                 table[sp].add(data[0].strip())
+# names = {}
+# for line in open(path+"traits_ontology.txt"):
+#     line = line.strip()
+#     data = line.split("\t")
+#     n = data[1].split(";")[0]
+#     if n not in names:
+#         names[n] = set()
+#     names[n].add(data[0])
 
-species = list(table.keys())
-dades = {x:[] for x in species}
-dades["Trait"] = []
+# species = list(table.keys())
+# dades = {x:[] for x in species}
+# dades["Trait"] = []
 
-for n in names:
-    pref = names[n]
-    dades["Trait"].append(n)
-    for sp in species:
-        comun = list(set(pref) & set(table[sp]))
-        if len(comun)>0:
-            dades[sp].append(1)
-        else:
-            dades[sp].append(0)
-df = pd.DataFrame.from_dict(dades)
-df = df.set_index('Trait')
-fig, ax = plt.subplots(figsize=(5,6))  
-ax = sns.heatmap(df, cmap="Blues", yticklabels=True)
-ax.set_ylabel('')
-ax.set_title('Traits', fontsize=14)
-plt.savefig(path+"traits.png", bbox_inches='tight')
-plt.show()
+# for n in names:
+#     pref = names[n]
+#     dades["Trait"].append(n)
+#     for sp in species:
+#         comun = list(set(pref) & set(table[sp]))
+#         if len(comun)>0:
+#             dades[sp].append(1)
+#         else:
+#             dades[sp].append(0)
+# df = pd.DataFrame.from_dict(dades)
+# df = df.set_index('Trait')
+# fig, ax = plt.subplots(figsize=(5,6))  
+# ax = sns.heatmap(df, cmap="Blues", yticklabels=True)
+# ax.set_ylabel('')
+# ax.set_title('Traits', fontsize=14)
+# plt.savefig(path+"traits.png", bbox_inches='tight')
+# plt.show()
             
             
