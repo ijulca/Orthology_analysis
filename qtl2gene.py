@@ -113,6 +113,7 @@ def trait2hog(inFile,hogFile):
         if data[0] != 'Trait':
             if data[4] != "None":
                 hogs = hogs2hogs([table[x] for x in data[4].split(";")])
+                hogs = sorted(hogs, key=lambda x:int(x.split(":C")[1].split(".")[0]))
                 if "," in data[0]:
                     for e in [x.replace(" ", "") for x in  data[0].split(",")]:
                         string = e+"_"+pref +"\t"+";".join(hogs)
