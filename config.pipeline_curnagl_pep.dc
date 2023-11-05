@@ -121,7 +121,7 @@ kalign_params       parameter      -f fasta
 # t_coffee_params     parameter      -n_core 1 -output fasta -quiet
 
 ##  We used an special T-Coffee flavor to generate the meta-alignment
-m_coffee            binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/tcoffee/bin/t_coffee
+m_coffee            binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/Programs/tcoffee/t_coffee/src/t_coffee
 m_coffee_params     parameter      -n_core 1 -output fasta -quiet #-setenv MAX_N_PID_4_TCOFFEE=425984
 
 ## Alignment trimming program
