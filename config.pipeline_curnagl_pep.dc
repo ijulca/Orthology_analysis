@@ -97,7 +97,7 @@ in_letter           parameter	     O:Z
 
 ## Alignment programs
 muscle              binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/muscle
-muscle_params       parameter      -maxiters 1 -diags -sv -distance1 kbit20_3
+muscle_params       parameter      -threads 1 ### old options -maxiters 1 -diags -sv -distance1 kbit20_3
 
 mafft               binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/mafft
 mafft_params        parameter      --auto
