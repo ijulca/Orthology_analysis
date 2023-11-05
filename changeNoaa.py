@@ -33,7 +33,7 @@ seqs = remove_stop(seqs)
 
 outfile = open(inFile + ".changed", "w")
 
-noAA = {"B":0, "J":0, "O":0, "U":0, "Z":0,'*':0}
+noAA = {"B":0, "J":0, "O":0, "U":0, "Z":0,'*':0,".":0}
 
 for s in seqs:
     pep = ''
