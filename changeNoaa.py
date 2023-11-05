@@ -12,7 +12,7 @@ def remove_stop(seqs):
     new_seq = {}
     i = 0
     for s in seqs:
-        if seqs[s][-1] == '*':
+        if seqs[s][-1] == '*' or seqs[s][-1]=='.':
             new_seq[s] = seqs[s][:-1]
             i+=1
         else:
