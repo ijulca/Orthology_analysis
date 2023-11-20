@@ -9,6 +9,7 @@ import ete3
 import sys,os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
 import phylome_analysis as pa
+import pandas as pd
 import general_modules as gmo
 from matplotlib import pyplot as plt
 
@@ -249,15 +250,29 @@ def get_organ_para(outName,organFile):
         print(string,file=outfile)
     outfile.close()
     
-
+def get_table(inFile):
+    table = {}
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split("\t")
+        if "Mnemonic" not in line:
+            table[data[0]] = data[2:]
+    return table
 
 #### Main
+path = "/home/ijulca/projects/ldo_project/"
 alltreeFile = '/home/ijulca/projects/ldo_project/alltree.txt'
 sptreeFile = "/home/ijulca/projects/ldo_project/Trees_sp/SpeciesTree_all.txt"
 outName = "/home/ijulca/projects/ldo_project/plants"
 organFile = "/home/ijulca/projects/ldo_project/genes2organs.txt"
+taxaFile = "/home/ijulca/projects/ldo_project/table_animals.dupev.tsv"
+speciesFile = "/home/ijulca/projects/ldo_project/Alex_data/data/panther-17.0/species_tree.nhx"
+animalTreeFile = path+"animal_tree.txt"
+picPath = "/home/ijulca/Programs/phylopic-tools/images/"
+spTreeanimal = path+"Figures/species_tree_animals.svg"
 bootstrap = 60
 fold = 1.5
+
 
 ### Get the data
 #get_DuplicationsData(alltreeFile, sptreeFile, bootstrap, outName)
@@ -265,5 +280,42 @@ fold = 1.5
 
 ### Analyse the data
 #getting_DF_paralogs(outName, sptreeFile, fold)
-getting_DF_paralogs2(outName, sptreeFile, fold)
+##getting_DF_paralogs2(outName, sptreeFile, fold)
 #get_organ_para(outName,organFile)
+
+
+### Alex data
+### Get the image of the species tree
+# pics= glob.glob(picPath+"*")
+# table = get_table(taxaFile)
+# t1 = ete3.Tree(speciesFile, format=1)
+# t = t1.get_common_ancestor(list(table.keys()))
+# t.prune(list(table.keys()))
+# t.write(format=2, outfile=animalTreeFile)
+
+# for node in t.traverse():
+#     node.img_style['size'] = 0
+#     if node.is_leaf():
+#         sp = table[node.name][0]
+#         name_face = ete3.TextFace(sp, fstyle="italic", fsize=30)
+#         node.add_face(name_face, column=0, position='aligned')
+#         pic = ete3.faces.ImgFace(picPath+node.name+".svg", width=60, height=60)
+#         node.add_face(pic, column=1, position='aligned')
+        
+# ts = ete3.TreeStyle()
+# ts.draw_guiding_lines = True
+# ts.scale = 20
+# ts.branch_vertical_margin = 10 
+# ts.show_leaf_name = False
+# t.render(spTreeanimal, dpi=300, w=1000, tree_style=ts)
+#t.show(tree_style=ts)
+
+plt.figure(figsize=(15,4))
+df = pd.read_csv(taxaFile, sep="\t", header=0, index_col=None)
+ax = df.plot.barh(x="Mnemonic",y=["No Outliers", "One Outlier (MDO)", "Both Outliers"], stacked=True)
+
+# ax = df.plot.bar(stacked=True)
+plt.show()
+
+
+    
