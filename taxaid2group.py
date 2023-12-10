@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Thu Nov 26 09:51:58 2020
@@ -10,7 +10,7 @@ from Bio import Entrez
 import sys, os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
 import general_modules as gmo
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 ncbi = NCBITaxa()
 
 ### use this link of ncbi to get the lineages:
@@ -158,16 +158,28 @@ def analysis2taxa(inFile, linFile):
         if len(key) == 0:
             print(s)
             
-            
+def taxaid2lineage(inFile): ### using ete4
+    outfile = open(inFile+'.lineage.txt','w')
+    for line in open(inFile):
+        taxid = line.strip()
+        lineage = ncbi.get_lineage(taxid) 
+        names = ncbi.get_taxid_translator(lineage)
+        lineage_names = [names[x] for x in lineage]
+        lineage2ranks = ncbi.get_rank(names)
+        lineage_ranks = [lineage2ranks[x] for x in lineage]
+        string = taxid+'\t'+'; '.join(lineage_names)+'\t'+'; '.join(lineage_ranks)
+        print(string, file=outfile)
+    outfile.close()
+      
             
 ### main
 parser = argparse.ArgumentParser(description="get the taxonomic classification of samples")
-parser.add_argument("-n", "--taxlist", dest="taxlist", help="taxaid list. Give with tag 'a'")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="result of ncbi: tax_report file")
+parser.add_argument("-n", "--taxlist", dest="taxlist", help="taxaid list. Give with tag 'a'")
 parser.add_argument("-t", "--tag", dest="tag", required=True, help="task to do: l:list of taxaid, \
                     a: list of taxaid and lineages for the taxid list,\
                     n: ncbi dataset, p: phytozome list of species,\
-                    b: analysis")
+                    b: analysis, t list of taxaids")
 args = parser.parse_args()
 
 inFile = args.inFile
@@ -177,6 +189,9 @@ tag = args.tag
 if tag == "l":
     print("getting the taxaID list...")
     get_all_taxaid(inFile)
+elif tag =='t':
+    print('getting the taxaID list from list...')
+    taxaid2lineage(inFile)
 elif tag == "a":
     print("getting the lineages...")
     ids = get_list(idsFile)

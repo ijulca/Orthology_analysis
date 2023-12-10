@@ -10,7 +10,7 @@ import sys, os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
 import genome_modules as GM
 import phylome_analysis as pa
-import ete3
+import ete4
 import random
 from collections import Counter
 import pandas as pd
@@ -41,14 +41,13 @@ def filter_blast(blastFiles, protFiles):
             if e <0.005:
                 genes.add(data[1])
     print("number of genes:", len(genes))
-    
     pepFiles = glob.glob(protFiles)
-    outfile = open(path +"spp_gene.fa", "w")
+    outfile = open(path +"ssp_gene_all.fa", "w")
     for f in pepFiles:
         seqs = GM.load_sequences(f)
         for s in seqs:
             if s in genes:
-                GM.print_sequence(s.replace(":","."),seqs[s],outfile)
+                GM.print_sequence(s,seqs[s],outfile)
     outfile.close()
 
 def get_taxa(inFile):
@@ -162,10 +161,10 @@ def sra2names(inFile):
         
 
 ### Main
-path = "/home/ijulca/projects/tomato_project/analysis/"
+path = "/home/ijulcach/projects/tomato_project/SSP2_analysis/"
 
 #### Blast filter
-## filter_blast(path+"blast_results/*.blast", path+"protein_DB/*.fa")
+filter_blast(path+"blast_results/*.blast", path+"protein_DB/*.fa")
 
 ##### Tree analysis
 
@@ -223,35 +222,35 @@ seed = ["Solyc02g061990.3.1_HEINZ", "Solyc02g083520.2.1_HEINZ"] ## SSP2, SSP
 #                 print("duplications",e, counts[e])
 
 ###### Expression analysis
-expFile = path +'ssp_expression.evorepro.csv'
-expFile = path+"ssp_ARATH.expression.txt"
-table = sra2names(path+"Evorepro.all_sampleAnnotation.csv")
-organs = ['Apical meristem', 'Root meristem','Flower', 'Stem', 'Female', 'Root', 'Male', 'Leaf', 'Seeds']
-for line in open(expFile):
-    line = line.strip()
-    data = line.split("\t")
-    if data[0] == "ids":
-        names = [x+"--"+table[x] for x in data[1:]]
-        new_names = {x:table[x] for x in data[1:]}
-        dropcol = [x for x in data[1:] if table[x] not in organs[:2]]
+# expFile = path +'ssp_expression.evorepro.csv'
+# expFile = path+"ssp_ARATH.expression.txt"
+# table = sra2names(path+"Evorepro.all_sampleAnnotation.csv")
+# organs = ['Apical meristem', 'Root meristem','Flower', 'Stem', 'Female', 'Root', 'Male', 'Leaf', 'Seeds']
+# for line in open(expFile):
+#     line = line.strip()
+#     data = line.split("\t")
+#     if data[0] == "ids":
+#         names = [x+"--"+table[x] for x in data[1:]]
+#         new_names = {x:table[x] for x in data[1:]}
+#         dropcol = [x for x in data[1:] if table[x] not in organs[:2]]
 
-sort_map = {day: next((idx for idx, val in enumerate(organs) if val in day),
-                 len(names)) for day in names}
-cols = sorted(names, key=sort_map.__getitem__)
-cols = [x.split("--")[0] for x in cols]
+# sort_map = {day: next((idx for idx, val in enumerate(organs) if val in day),
+#                  len(names)) for day in names}
+# cols = sorted(names, key=sort_map.__getitem__)
+# cols = [x.split("--")[0] for x in cols]
 
-df = pd.read_csv(expFile, sep="\t", header=0, index_col=0)
-df = df[cols]
-df = df.drop(dropcol, axis=1)
-# df = df.rename(columns=new_names)
-for index, row in df.iterrows():
-    # df.loc[index] = (row-row.mean())/row.std()
-    df.loc[index] = row/row.max()
-plt.figure(figsize=(15,8))
-sns.set(font_scale=1.5)
-ax = sns.heatmap(df, cmap="Blues", xticklabels=True)
-plt.savefig(path+"expression_meri_ARATH.svg",bbox_inches = "tight")
-plt.show()
-#corr = df.loc["Solyc02g061990.3.1"].corr(df.loc["Solyc02g083520.2.1"])
-corr = df.loc["AT2G17770"].corr(df.loc["AT4G35900"])
-print(corr)
+# df = pd.read_csv(expFile, sep="\t", header=0, index_col=0)
+# df = df[cols]
+# df = df.drop(dropcol, axis=1)
+# # df = df.rename(columns=new_names)
+# for index, row in df.iterrows():
+#     # df.loc[index] = (row-row.mean())/row.std()
+#     df.loc[index] = row/row.max()
+# plt.figure(figsize=(15,8))
+# sns.set(font_scale=1.5)
+# ax = sns.heatmap(df, cmap="Blues", xticklabels=True)
+# plt.savefig(path+"expression_meri_ARATH.svg",bbox_inches = "tight")
+# plt.show()
+# #corr = df.loc["Solyc02g061990.3.1"].corr(df.loc["Solyc02g083520.2.1"])
+# corr = df.loc["AT2G17770"].corr(df.loc["AT4G35900"])
+# print(corr)

@@ -1,0 +1,201 @@
+# Pipeline Configuration file.
+#
+# You can use the wildcard "#" to put some comments in this file.
+#
+# There are several parameters type:
+
+#
+# > "mode": It would set which mode, among the available ones, should be used to
+#           perform a specific step of the pipeline. It would also define which
+#           binary program would be use to execute the given step
+#
+#   program parameters:   <parameter_name> parameter <parameters>
+#   program pathways:     <program_name> binary <path>
+#   or
+#   program pathways:     <program_name> binary
+#   directory:            <directory_name> directory <path>
+#   file:                 <file_name> file <path>
+#
+# The program looks for each file and directory to be sure that they exist and
+# are accesibles. For the program, if there is not a path for the program, the
+# script will look for it in the system's binaries directory. Otherwise, the
+# script will evaluate that the program exists.
+#
+# There is not problem for using <tab> or <blank_spaces>
+
+verbose           parameter	 1
+
+## Set the residues datatype for the whole pipeline. It will affect for the
+## homology search but also other parts of the pipeline such as alignments -
+## whether amino-acid residues in the trimmed alignment should be converted to
+## their corresponding codon or nucleotides prior to the phylogenetic tree
+## reconstruction - or phylogenetic tree reconstruction - when model selection
+## is used. Available values are "protein", "prot2codon", "prot2nuc" and "nuc"
+
+residue_datatype    parameter      protein #protein # prot2codon prot2nuc nuc
+
+## HOMOLOGY SEARCH Step. General parameters, available modes and programs are
+## defined here
+
+## General parameters
+#e_value             parameter      1e-5
+#coverage            parameter      0.5
+
+## you can set 'no_limit' for avoiding selecting any specific number of hits
+## during the search
+#hits                parameter      150
+
+## Protein Homology search
+
+#homology            mode           legacy_blast
+
+## Legacy NCBI BLAST
+#legacy_blast        mode           blastpgp
+#blastpgp            binary         /users/tg/scapella/000.001.bin/packages/blast-2.2.26/bin/blastpgp
+#blastpgp_params     parameter      -FT -b 5000 -a 2 -m8 -s -z 1000000 -t0
+
+## NCBI BLAST+
+# blast+              mode           psiblast
+# psiblast            binary
+# psiblast_params     parameter      -seg yes -num_alignments 5000 -num_threads 2
+# psiblast_params     parameter      -outfmt 6 -use_sw_tback -dbsize 1000000
+# psiblast_params     parameter      -comp_based_stats 0
+
+## HMMER Search based on a single query sequence rather than an alignment
+# phmmer              binary
+
+## jackhmmer is an iterative search akin to PSI-BLAST
+# jackhmmer           binary
+
+## It's also possible to perform the homology search using an input
+## alignment for HMMSearch
+# hmmbuild            binary
+# hmmsearch           binary
+
+## HMMER parameters
+# hmmer_params        parameter      --noali --nobias --nonull2 --cpu 2 -Z 1000000
+
+## Multiple Sequence alignment
+
+## If more than one alignment program is set or/and alignments are generated in
+## forward/backward directions then the resulting alignments will be combined
+## using an special T-Coffee flavor: M-Coffee
+
+alignment           mode           kalign muscle mafft
+consensus           mode           m_coffee
+trimming            mode           trimal
+both_direction      parameter      True
+
+## Set minimum number of sequences required to reconstruct an alignment
+min_seqs_alignment  parameter      2
+
+## General parameter for aligner programs. Sometimes rare aminoacids such as
+## selenocysteine 'U' or pyrrolysine 'O' cause programs to fail, therefore,
+## those rare amino-acids are substitute prior and after making the alignments
+in_letter           parameter	     U:B
+in_letter           parameter	     O:Z
+
+## Alignment programs
+muscle              binary         muscle
+muscle_params       parameter      -maxiters 1 -diags -sv -distance1 kbit20_3
+
+mafft               binary         mafft
+mafft_params        parameter      --auto
+
+kalign              binary         kalign
+kalign_params       parameter      -f fasta
+
+# clustal_omega        binary
+# clustal_omega_params parameter     --auto --force
+
+# clustalw            binary
+# clustalw_params     parameter      -ALIGN
+
+# dialign-tx          binary
+# dialign-tx_params   parameter
+
+# prank               binary
+# prank_params        parameter      +F
+
+# t_coffee            binary
+# t_coffee_params     parameter      -n_core 1 -output fasta -quiet
+
+##  We used an special T-Coffee flavor to generate the meta-alignment
+m_coffee            binary         t_coffee
+m_coffee_params     parameter      -n_core 1 -output fasta -quiet #-setenv MAX_N_PID_4_TCOFFEE=425984
+
+## Alignment trimming program
+## We currently only support trimAl as alignment trimming program. It implements
+## many of the different ways to trim an given alignment. It is also implements
+## an special mode for trimming consensus alignment generated after combining
+## more than one
+trimal              binary         trimal
+trimal_params       parameter	     -phylip -gt 0.5
+trimal_compare      parameter	     -ct 0.1667
+trimal_cds          parameter	     -splitbystopcodon
+
+## Alignment and Sequences files manipulation
+readal              binary         readal
+
+### Phylogenetic tree reconstruction program
+#tree                mode           phyml
+
+## Evolutionary models for PhyML
+#evol_models         parameter	     JTT WAG MtREV VT LG Blosum62 Dayhoff
+
+## Additional evolutionary models for PhyML
+## evol_models         parameter	     DCMut RtREV CpREV MtMam MtArt
+
+## Evolutionary model for CodonPhyML - Codons
+## evol_models         parameter	     GY
+
+## Evolutionary model for FastTree - AminoAcids
+## evol_models         parameter	     wag jtt
+
+## Evolutionary model for RAxML - AminoAcids
+## evol_models         parameter	     JTT WAG MTREV VT LG BLOSUM62 DAYHOFF
+
+## Additional models
+## evol_models         parameter	     DCMUT RTREV CPREV MTMAM MTART MTZOA
+
+## If there is no indication about how many models should be tested then all of
+## them will be used for phylogenetic reconstruction. This variable only is
+## useful when the model selection is executed using Neighbour-Joining trees -
+## Otherwise it is advice to set a reduce number of <evol_models> and evaluate
+## all of them to choose the best fitting to the data ones.
+#numb_models        parameter	     1
+
+## If there is no indication about which approaches to used, only Maximum
+## Likelihood trees will be reconstructed
+#tree_approach       mode           nj ml
+
+## You can define generic parameters which will be used for all approaches and
+## then parameters that will be approach specific - If there is no specific
+## options for a given step, you can skip those parameters
+#nj                  parameter	     -b  0 -o lr
+#ml                  parameter	     -b -2 -o tlr
+
+## You can include approach-independt parameters for each program using the
+## <parameter> '_params' or you can include specific parameters for each of
+## approaches using specific parameters for that - e.g. specific parameters
+## for phyml for the <nj> and <ml> steps
+
+## Parameters for PhyML
+#phyml               binary         /users/tg/scapella/000.001.bin/bin/phyml_patched_20131112
+#phyml_params        parameter      -d aa -f e -v e -a e -c 4 --no_memory_check
+
+## Parameters for CodonPhyML
+## codonphyml          binary         codonphyml_201304.11
+## codonphyml_params   parameter      -d codon -b -2 -fmodel F3X4 -t e -f e
+## codonphyml_params   parameter      -w DGAMMA -wclasses 3 -o tlr
+
+## Parameters for FastTree
+## fasttree            binary        /home/scapella/git/phylomizer/bin/FastTree
+## fasttree_params     parameter     -gamma
+
+## Parameters for RAxML - there is an specific parameter for RAxML to add a
+## suffix to the model name - it is usually a 'X' or 'F' but check RAxML manual
+## for more information/options
+## raxml               binary        raxmlHPC-AVX
+## raxml_params        parameter     -m PROTGAMMAI
+## raxml_model_suffix  parameter     F
