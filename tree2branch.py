@@ -272,16 +272,16 @@ def plot_box_pval_sp(categories, table, outfigure):
 #######################
 ### infiles and outfiles
 
-pathPlots = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/results/plots/'
-pathTables = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/results/tables/'
-treepath = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/panther-18.0/trees/'
-speciesFile = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/panther-18.0/species_tree.nhx'
-expPlantdata = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Samples/'
+pathPlots = '/home/ijulcach/projects/ldo_project/results/plots/'
+pathTables = '/home/ijulcach/projects/ldo_project/results/tables/'
+treepath = '/home/ijulcach/projects/ldo_project/data/panther-18.0/trees/'
+speciesFile = '/home/ijulcach/projects/ldo_project/data/panther-18.0/species_tree.nhx'
+expPlantdata = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Samples/'
 taxaFile = '/home/ijulcach/projects/Land_Plants/nemo2taxa.txt'
 
 inFile = pathTables+'pairwise_tests.tsv'
 linFile = pathTables+'major_lineages_sp.txt'
-expPath = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/'
+expPath = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/'
 # outfile1 = pathTables+'plant_exp_pcc_scaler.tsv'
 # outfig1 = pathPlots+'plant_exp_pcc_scaler.svg'
 # outfile1 = pathTables+'plant_exp_pcc_noscaler.tsv'
@@ -300,7 +300,7 @@ outfig4 = pathPlots +'plant_exp_pcc_zscoreLog_sp.svg'
 outfig5 = pathPlots +'plant_exp_pcc_zscoreLog_spS.svg'
 outfig6 = pathPlots +'plant_exp_pcc_zscoreLog_spI.svg'
 
-files = glob.glob('/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/*/*.Gnames.sample.txt')
+files = glob.glob('/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/*/*.Gnames.sample.txt')
 outname1 = pathTables+'plant_sampleSPM.tsv'
 outname2 = pathTables + 'plant_sampleSPM_matrix.tsv'
 outfig7 = pathPlots+'plant_samplesSPM.svg'
@@ -314,9 +314,9 @@ outsampTable = pathTables+'sp2number_samples.tsv'
 outfigs = pathPlots+'sp2number_samples.svg'
 
 ### load names
-sp2name = load_taxa(taxaFile)
+# sp2name = load_taxa(taxaFile)
 #### Get number of duplications
-treeFiles = glob.glob(treepath+'*')
+# treeFiles = glob.glob(treepath+'*')
 
 # outfile = open(pathTables+'tree_duplications.tsv2','w')
 # for f in treeFiles:
@@ -339,7 +339,7 @@ treeFiles = glob.glob(treepath+'*')
 # outfile.close()
 
 ##### family-specific rate ### Supplementary Figure 1
-# inFile = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/results/tables/fitted_family_info.tsv'
+# inFile = '/home/ijulcach/projects/ldo_project/results/tables/fitted_family_info.tsv'
 # outfigure1 = pathPlots +'histogram_familyrates.svg'
 # df = pd.read_csv(inFile, sep='\t', header=0)
 # ax = sns.histplot(df,x='rate', bins=200)
