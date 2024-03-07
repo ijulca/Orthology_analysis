@@ -10,7 +10,9 @@ import sys, os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
 import genome_modules as GM
 import phylome_analysis as pa
-import ete4
+from ete4 import Tree, PhyloTree
+from ete4.treeview import NodeStyle, TreeStyle
+from ete4.smartview import TreeLayout, TextFace
 import random
 from collections import Counter
 import pandas as pd
@@ -30,24 +32,26 @@ def get_sp2age(treeFile, name):
     spe2age = {x:i for i,x in enumerate(leaves, start=1)}
     return spe2age
 
-def filter_blast(blastFiles, protFiles):
-    blastFiles = glob.glob(blastFiles)
+def filter_blast(pathBlast, protFiles):
+    blastFiles = glob.glob(pathBlast+'/*.blast')
     genes = set()
+    l = 200 ## 1/3 of seq lenght
     for f in blastFiles:
         for line in open(f):
             line = line.strip()
             data = line.split("\t")
+            lon = float(data[3])
             e = float(data[10])
-            if e <0.005:
+            if e <0.005 and lon >l:
                 genes.add(data[1])
     print("number of genes:", len(genes))
-    pepFiles = glob.glob(protFiles)
-    outfile = open(path +"ssp_gene_all.fa", "w")
+    pepFiles = glob.glob(protFiles+'*.fa')
+    outfile = open(pathBlast+"genes_all_blast.fa", "w")
     for f in pepFiles:
         seqs = GM.load_sequences(f)
         for s in seqs:
             if s in genes:
-                GM.print_sequence(s,seqs[s],outfile)
+                GM.print_sequence(s.replace(':','.'),seqs[s],outfile)
     outfile.close()
 
 def get_taxa(inFile):
@@ -55,7 +59,10 @@ def get_taxa(inFile):
     for line in open(inFile):
         line = line.strip()
         data = line.split("\t")
-        table[data[0]] = data[2]
+        name = data[1]
+        if '_' in name:
+            name = ' '.join(data[1].split('_')[:2])
+        table[data[0]] = name
     return table
    
 def collapse_leaves(t,table, species):
@@ -118,7 +125,84 @@ def tree_figure(treeFile, prefixFile, outname):
     # Disable the default tip names config
     ts.show_leaf_name = False
     # Draw Tree
-    t.render(outname, dpi=300, w=1000, tree_style=ts)
+    t.render(outname, dpi=300, w=1000, tree_style=ts)   
+        
+
+def tree_figure2(treeFile, outgroup, outname):
+    t = PhyloTree(open(treeFile),sp_naming_function=load_species_name)
+    #t.set_outgroup(t[outgroup])  ### root the tree if necessary
+    events = t.get_descendant_evol_events()
+    t.write(props=['evoltype'], outfile=outname+'.nw')
+    t = Tree(open(outname+'.nw')) ## open as tree to modify figure
+    dups = list(t.search_nodes(evoltype='D'))
+    ##### To collapse the tree
+    # table = {}
+    # for line in open(linFile):
+    #     line = line.strip()
+    #     data = line.split('\t')
+    #     table[data[0]] = data[1]
+    # leaves = [leaf.name for leaf in t]
+    # lintab = {'Solanaceae':[],'Brassicaceae':[], 'Malvaceae':[],'Fabaceae':[]}
+    # for leaf in leaves:
+    #     s = leaf.split('_')[-1]
+    #     lin = table[s]
+    #     for e in lintab:
+    #         if e in lin:
+    #             lintab[e].append(leaf)
+    # parentcollapse = [t.common_ancestor(lintab[x]) for x in lintab]
+    ## Solanaceae specific tree:
+    # t = t.common_ancestor(lintab['Solanaceae'])
+    ## end sol tree
+    # collapsed = []
+    # for n in parentcollapse:
+    #     child = n.children
+    #     for n in child:
+    #         collapsed.append(n)
+    # for node in t.traverse():
+    #     if node in collapsed:
+    #         parent = node.up
+    #         newName = 'Collapsed-'+[leaf.name for leaf in node][0]
+    #         node.detach()
+    #         parent.add_child(name=newName)
+    ###### till here
+    ###### Graph design
+    ts = TreeStyle()
+    style = NodeStyle()
+    vn = 2 ### width of the lines
+    style['vt_line_width'] = vn
+    style['hz_line_width'] = vn
+    style['size'] = 0
+    for n in t.traverse():
+        n.set_style(style)
+    for n in t.traverse():
+        if n in dups:
+            nstyle = NodeStyle()
+            nstyle['fgcolor'] = 'red'
+            nstyle['size'] = 0
+            nstyle['vt_line_color'] = 'red'
+            nstyle['vt_line_width'] = vn
+            nstyle['hz_line_width'] = vn
+            n.set_style(nstyle)
+            style1 = NodeStyle()
+            style1['hz_line_color'] = 'red'
+            style1['vt_line_width'] = vn
+            style1['hz_line_width'] = vn
+            n.children[0].img_style = style1
+            n.children[1].img_style = style1
+        else:
+            n.set_style(style)
+    ts.show_leaf_name = True
+    ts.show_branch_support = True ### only for the complete Tree
+    ts.branch_vertical_margin = 8
+    ts.scale = 100 #250 #horizontal
+    ts.branch_vertical_margin = 2  #vertical
+    ###### Add species name:
+    table = get_taxa(taxaFile)
+    for leaf in t:
+        leaf.name = '_'.join(leaf.name.split('_')[:-1])+'-'+table[leaf.name.split('_')[-1]]
+    t.render(outname+'.svg', w=183, units='mm', tree_style=ts) #_sol
+    t.write(outfile=outname+'.nw', parser=1) #_sol, collapsed
+    # t.show(tree_style=ts)
 
 def get_duplication_nodes(t):
     events = t.get_descendant_evol_events()
@@ -159,43 +243,60 @@ def sra2names(inFile):
         table[data[1]] = data[3]
     return table
         
-
+###########################################################################
 ### Main
-path = "/home/ijulcach/projects/tomato_project/SSP2_analysis/"
+path = "/home/ijulcach/projects/tomato/"
 
 #### Blast filter
-filter_blast(path+"blast_results/*.blast", path+"protein_DB/*.fa")
+# filter_blast(path+"MADS_box_genes/split_fasta/", path+"protein_DB/")
 
 ##### Tree analysis
 
-# treeFile = path + 'spp_gene.alg.clean.treefile'
-# rootTreeFile = path+'spp_gene.root.treefile'
-# out = 'ARATH'
+# treeFile = path + 'ssp_877/ssp_gene_877.alg.clean.treefile.root'
+# genes = ["Solyc02g083520.2.1_HEINZ","Solyc02g061990.3.1_HEINZ", 'mRNA.Phygri02g013770.1_PHYGR',
+#           'AT2G17770.2_ARATH','AT4G35900.1_ARATH', 'AMBTC02854_AMBTC',
+#           'CUCSA06496_CUCSA', 'WHEAT38870_WHEAT']
 
-# spe2age = get_sp2age(treeFile, out)
-# t = pa.load_tree(treeFile,spe2age)
-# #.write(format=2, outfile=rootTreeFile)
-# ancestor = t.get_common_ancestor(['Solyc02g061990.3.1_HEINZ',"Solyc02g083520.2.1_HEINZ", "AT2G17770.2_ARATH"])
-# leaves = list(leaf.name for leaf in ancestor.get_leaves())
+# remove = ['ARATH12252_ARATH','ARATH12250_ARATH','ARATH12251_ARATH',
+#           'ARATH30780_ARATH','ARATH30781_ARATH','SOLLC12257_SOLLC',
+#           'SOLLC13779_SOLLC','CAPAN30218_CAPAN', 'CAPAN32113_CAPAN',
+#           'SOLTU15986_SOLTU','SOLTU17722_SOLTU']
+# t = PhyloTree(open(treeFile))
+# ancestor = t.common_ancestor(genes)
+# leaves = [leaf.name for leaf in ancestor]
+
 # pepFiles = glob.glob(path+"protein_DB/*.fa")
-# outfile = open(path +"spp_gene2.fa", "w")
+# outfile = open(path +"ssp_gene2.fa", "w")
 # for f in pepFiles:
 #     seqs = GM.load_sequences(f)
 #     seqs = {s.replace(":","."):seqs[s] for s in seqs}
 #     for s in seqs:
-#         if s in leaves:
-#             GM.print_sequence(s.replace(":","."),seqs[s],outfile)
+#         k = s.replace(':','.')
+#         if k in leaves and k not in remove:
+#             GM.print_sequence(k,seqs[s],outfile)
 # outfile.close()
-# print(len(leaves))
+# print(len(leaves)-len(remove))
 
 #### Tree plots
 #treeFile = path +"spp_gene.root.treefile"
 treeFile = path +"spp_gene2.root.treefile"
 outparaFile = path+"spp_gene2_paralogs.txt"
+taxaFile = '/home/ijulcach/projects/tomato/taxa2species.txt'
+linFile = '/home/ijulcach/projects/Land_Plants/nemo2taxa.txt'
 seed = ["Solyc02g061990.3.1_HEINZ", "Solyc02g083520.2.1_HEINZ"] ## SSP2, SSP
+# treeFilec = path +'ssp_179/ssp_gene_179.alg.clean.treefile'
+treeFilec = path+'ssp_179/oma_gene_D0228852/oma_ssp.iqtree.treefile'
+treeFilec = path +'oma_geneTree_D0228852/oma_all_ssp.alg.clean.treefile'
+treeFilec = path +'oma_geneTree_D0228852/oma_all_ssp.alg.metalig.treefile'
+###MADBOX:
+treeFilec = '/home/ijulcach/projects/tomato/MADS_box_genes/oma_hogs/sepa_oma.phy.treefile.root.nw'
+outfigtree = treeFilec+ '_fig'
 
 #tree_figure(treeFile, path +"taxa2species.txt", path+"tree_2_3.svg")
 #get_evol_events(treeFile, outparaFile)
+#### Tree figure final
+outgroup = 'PAPSO30197_PAPSO'  ## 'AMBTC02854_AMBTC', 'AMTR_s00152p00081700_AMBTC'
+tree_figure2(treeFilec, outgroup, outfigtree)  
 
 # table = get_taxa(path +"taxa2species.txt")
 # names = [x for x in table if table[x].split(" ")[0]=="S."]
