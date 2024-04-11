@@ -19,10 +19,18 @@ from sklearn.preprocessing import StandardScaler
 from scipy.stats import pearsonr
 from scipy.stats import mannwhitneyu
 from scipy.stats import ranksums
+from scipy.stats import kruskal
+from scikit_posthocs import posthoc_dunn
 from statsmodels.sandbox.stats.multicomp import multipletests
 import matplotlib.colors
 import math
+import ete3
 
+def get_keys_hf5(inFile):
+    with pd.HDFStore(inFile) as hdf:
+        # This prints a list of all group names:
+        keys = hdf.keys()
+    return keys
 
 def check_spider(log):
     toprint = False
@@ -39,7 +47,7 @@ def load_taxa(inFile):
     for line in open(inFile):
         line = line.strip()
         data = line.split('\t')
-        table[data[0]] = data[1].split(';')[-1].strip()
+        table[data[0]] = data[1]#.split(';')[-1].strip()
     return table
 
 def create_allTrees(treeFiles,outFile):
@@ -132,23 +140,14 @@ def get_sample_id(inFile):
     sam[s] = g+'\t'+n
     return sam
 
-def get_wilcoxon_rank_sum(list1, list2):
-    wilran = ranksums(list1, list2)
-    # stat, p = mannwhitneyu(list1,list2)
-    #mannwhitneyu(list1, list2).pvalue
-    return wilran[1] # pvalue of the test
-
-def get_p_adj(pval):
-    pval_flt = [x for x in pval if str(x) != 'nan'] ### remove nan
-    p_new = multipletests(pval_flt, alpha=0.05, method='fdr_bh') ## bonferroni
-    p_adj = [x for x in p_new[1]]
-    p_adjusted = []
-    for item in pval:
-        if str(item) == 'nan':
-            p_adjusted.append(item)
-        else:
-            p_adjusted.append(p_adj.pop(0))    
-    return p_adjusted
+def format_pval(p):
+    if p < 0.01:
+        sn = np.format_float_scientific(p, precision=1, exp_digits=1)+"**"
+    elif p < 0.05:
+        sn = np.format_float_scientific(p, precision=1, exp_digits=1)+"*"
+    else:
+        sn = str(round(p,3))
+    return sn
 
 def plot_box_pval(categories, table, outfigure):
     pval = []
@@ -200,9 +199,9 @@ def plot_box_pval_sp(categories, table, outfigure):
         for n in categories[1:]:
             d1 = data[categories[0]]
             d2 = data[n]
-            p = get_wilcoxon_rank_sum(d1,d2)
+            p = gmo.get_wilcoxon_rank_sum(d1,d2)
             pval.append(p)
-        p_adjusted = get_p_adj(pval)
+        p_adjusted = gmo.get_p_adj(pval)
         dades = [[]]*len(categories)
         for i,n in enumerate(categories):
             dades[i] = data[n]
@@ -236,82 +235,489 @@ def plot_box_pval_sp(categories, table, outfigure):
     plt.savefig(outfigure, bbox_inches='tight')
     plt.show()
 
+###########################################
+###########################################
+######### PCC and TAU functions    ########
+###########################################
+###########################################
+
+def transform_p(p):
+    if p < 0.01:
+        sn = np.format_float_scientific(p, precision=1, exp_digits=1)+"**"
+    elif p < 0.05:
+        sn = np.format_float_scientific(p, precision=1, exp_digits=1)+"*"
+    else:
+        sn = str(round(p,3))
+    return sn
+
+def get_data_h5(inFile, values, tag):
+    keys = get_keys_hf5(inFile)
+    for k in keys:
+        # print(k)
+        df = pd.read_hdf(inFile, key=k)
+        df['tauV'] = df['mdo_tau'] - df['ldo_tau']
+        # print(df.columns.values)
+        df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+        df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+        if tag == 'pcc':
+            val_n = list(df2['pcc_stat'].values)
+            val_l = list(df3['pcc_stat'].values)
+        elif tag == 'tau':
+            val_n = list(df2['tauV'].values)
+            val_l = list(df3['tauV'].values)
+        values[0]+= [x for x in val_n if str(x) !='nan']
+        values[1]+= [x for x in val_l if str(x) !='nan']
+    return values
+
+def species_pcc_analisis(inFile, table, tag):
+    keys = get_keys_hf5(inFile)
+    for k in keys:
+        n = k.replace('/','')
+        df = pd.read_hdf(inFile, key=k)
+        df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+        df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+        if tag == 'pcc':
+            val_n = list(df2['pcc_stat'].values)
+            val_l = list(df3['pcc_stat'].values)
+        elif tag == 'tau':
+            df2['tauV'] = df2['mdo_tau'] - df2['ldo_tau']
+            df3['tauV'] = df3['mdo_tau'] - df3['ldo_tau']
+            val_n = list(df2['tauV'].values)
+            val_l = list(df3['tauV'].values)
+        table[n] =[[x for x in val_n if str(x) !='nan']]
+        table[n].append([x for x in val_l if str(x) !='nan'])
+    return table
+
+def nodes_pcc_analisis(inFile, table, name, tag):
+    table.update({'internal_'+name:[[],[]], 'terminal_'+name:[[],[]]})
+    keys = get_keys_hf5(inFile)
+    for k in keys:
+        n = k.replace('/','')
+        df = pd.read_hdf(inFile, key=k)
+        df['tauV'] = df['mdo_tau'] - df['ldo_tau']
+        df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+        df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+        dfnt = df2.loc[(df['sp_tree_head'] == n)] ## select terminal node normal
+        dfni = df2.loc[(df['sp_tree_head'] != n)]
+        dflt = df3.loc[(df['sp_tree_head'] == n)] ## select terminal node n-long
+        dfli = df3.loc[(df['sp_tree_head'] != n)]
+        if tag == 'pcc':
+            vnt = list(dfnt['pcc_stat'].values)
+            vni = list(dfni['pcc_stat'].values)
+            vlt = list(dflt['pcc_stat'].values)
+            vli = list(dfli['pcc_stat'].values)
+        elif tag == 'tau':
+            vnt = list(dfnt['tauV'].values)
+            vni = list(dfni['tauV'].values)
+            vlt = list(dflt['tauV'].values)
+            vli = list(dfli['tauV'].values)
+        table['terminal_'+name][0] += [x for x in vnt  if str(x) !='nan']
+        table['terminal_'+name][1] += [x for x in vlt if str(x) !='nan']
+        table['internal_'+name][0] += [x for x in vni if str(x) !='nan']
+        table['internal_'+name][1] += [x for x in vli if str(x) !='nan']
+    return table
+
+def load_data_corr_out(inFile, outname,name):
+    keys = get_keys_hf5(inFile)
+    outfile = open(outname, 'w')
+    cat = ['n1','n2','n3','l1']
+    print('sp1\tsp2\tgene\tout_gene\tlineage\tcat\tval', file=outfile)
+    for k in keys:
+        n = k.replace('/','')
+        df = pd.read_hdf(inFile, key=k)
+        df = df.loc[(df['out_ldo_pcc_stat'].notnull()) & (df['out_mdo_pcc_stat'].notnull())] ### remove the nan values
+        df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+        df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+        species = set(list(df['outgroup_species'].values))
+        for s in species:
+            df2s = df2.loc[(df2['outgroup_species'] == s)]
+            df3s = df3.loc[(df3['outgroup_species'] == s)]
+            pcc_n1 = df2s['out_ldo_pcc_stat'].values
+            pcc_n2 = df2s['out_mdo_pcc_stat'].values
+            pcc_l1 = df3s['out_ldo_pcc_stat'].values
+            pcc_l2 = df3s['out_mdo_pcc_stat'].values
+            if len(pcc_n1)>=50 and len(pcc_n2)>=50 and len(pcc_l1)>=50 and len(pcc_l2)>=50: ### filter minimum amount of data in each catergory
+                if len(set(pcc_n1))>2 and len(set(pcc_n2))>2 and len(set(pcc_l1))>2 and len(set(pcc_l2))>2: ## filter rare values
+                        dades = [pcc_n1, pcc_n2, pcc_l1, pcc_l2]
+                        for i,e in enumerate(dades):
+                            c = cat[i]
+                            for j,v in enumerate(e):
+                                if c == 'n1':
+                                    string = n+'\t'+s+'\t'+df2s['ldo_gene'].values[j]+'\t'+df2s['out_gene'].values[j]
+                                elif c =='n2':
+                                    string = n+'\t'+s+'\t'+df2s['mdo_gene'].values[j]+'\t'+df2s['out_gene'].values[j]
+                                elif c == 'n3':
+                                    string = n+'\t'+s+'\t'+df3s['ldo_gene'].values[j]+'\t'+df3s['out_gene'].values[j]
+                                elif c == 'l1':
+                                    string = n+'\t'+s+'\t'+df3s['mdo_gene'].values[j]+'\t'+df3s['out_gene'].values[j]
+                                string += '\t'+name+'\t'+c+'\t'+str(v) 
+                                print(string,file=outfile)
+    outfile.close()
+
+def load_data_tau_out(inFile, outname, name):
+    keys = get_keys_hf5(inFile)
+    outfile = open(outname, 'w')
+    cat = ['n1','n2','n3','l1']
+    print('sp1\tsp2\tgene\tout_gene\tlineage\tcat\tval', file=outfile)
+    for k in keys:
+        n = k.replace('/','')
+        df = pd.read_hdf(inFile, key=k)
+        df['tau_l-o'] = df['ldo_tau'] - df['out_tau'] ## difference of tau
+        df['tau_m-o'] = df['mdo_tau'] - df['out_tau']
+        df = df.loc[(df['tau_l-o'].notnull()) & (df['tau_m-o'].notnull())] ### remove the nan values
+        df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+        df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+        species = set(list(df['outgroup_species'].values))
+        for s in species:
+            df2s = df2.loc[(df2['outgroup_species'] == s)]
+            df3s = df3.loc[(df3['outgroup_species'] == s)]
+            tau_n1 = df2s['tau_l-o'].values
+            tau_n2 = df2s['tau_m-o'].values
+            tau_l1 = df3s['tau_l-o'].values
+            tau_l2 = df3s['tau_m-o'].values
+            if len(tau_n1)>=50 and len(tau_n2)>=50 and len(tau_l1)>=50 and len(tau_l2)>=50: ### filter minimum amount of data in each catergory
+                if len(set(tau_n1))>2 and len(set(tau_n2))>2 and len(set(tau_l1))>2 and len(set(tau_l2))>2: ## filter rare values
+                        dades = [tau_n1, tau_n2, tau_l1, tau_l2]
+                        for i,e in enumerate(dades):
+                            c = cat[i]
+                            for j,v in enumerate(e):
+                                if c == 'n1':
+                                    string = n+'\t'+s+'\t'+df2s['ldo_gene'].values[j]+'\t'+df2s['out_gene'].values[j]
+                                elif c =='n2':
+                                    string = n+'\t'+s+'\t'+df2s['mdo_gene'].values[j]+'\t'+df2s['out_gene'].values[j]
+                                elif c == 'n3':
+                                    string = n+'\t'+s+'\t'+df3s['ldo_gene'].values[j]+'\t'+df3s['out_gene'].values[j]
+                                elif c == 'l1':
+                                    string = n+'\t'+s+'\t'+df3s['mdo_gene'].values[j]+'\t'+df3s['out_gene'].values[j]
+                                string += '\t'+name+'\t'+c+'\t'+str(v) 
+                                print(string,file=outfile)
+    outfile.close()
+
+def add_time_dataframe(outtab1, plantTreetime, pref2names):
+    table = {'_'.join(pref2names[x].split(' ')):x for x in pref2names} ##[:2] for plants
+    t = ete3.Tree(plantTreetime, format=1)
+    for leaf in t:
+        leaf.name = table[leaf.name]
+    outfile = open(outtab1+'_temp','w')
+    for line in open(outtab1):
+        line = line.strip()
+        data = line.split('\t')
+        if data[0] == 'sp1':
+            line += '\ttime'
+        else:
+            n = t.get_common_ancestor([data[0], data[1]])
+            node = t&data[0]
+            i = 0
+            while node != n:
+                i += node.dist
+                node = node.up
+            line += '\t' +str(i)
+        print(line, file=outfile)
+    outfile.close()
+        
+def load_major_lin(inFile):
+    table = {}
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split('\t')
+        if data[0] not in table:
+            table[data[0]] = set()
+        table[data[0]].add(data[0])
+        for e in data[2].split('; '):
+            table[data[0]].add(e)
+    return table
+
+def change2float(x):
+    try:
+        return float(x)
+    except:
+        return np.nan
     
-### main
-# parser = argparse.ArgumentParser(description="get the gene trees and analysis")
-# parser.add_argument("-p", "--path", dest="path", default='./Data/', help="path where is the data. Default=./Data/")
-# #parser.add_argument("-s", "--spTree", dest="spTree", required=True, help="rooted species tree")
-# args = parser.parse_args()
+def get_structure_data(dupFile, foFiles, outfigname, majorlinFile):
+    majorlin = load_major_lin(majorlinFile)
+    categories = ['normal-normal','normal-long']
+    df = pd.read_csv(dupFile,sep='\t')
+    df['genes'] = df['ldo_gene']+'-'+df['mdo_gene']
+    df['lddt'] = np.nan
+    for f in foFiles:
+        keys = get_keys_hf5(f)
+        for k in keys:
+            stframe = pd.read_hdf(f, key=k)
+            stframe["lddt"] = stframe["lddt"].apply(change2float) ### change to float
+            stframe['genes'] = stframe['gene1']+'-'+stframe['gene2']
+            df.loc[df.genes.isin(stframe.genes), ['lddt']] = stframe['lddt'].values
+    # df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
+    # df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
+    # table = [[x for x in list(df2['lddt'].values) if str(x)!='nan'], [x for x in list(df3['lddt'].values) if str(x)!='nan']]
+    # ax = sns.boxplot(data=table, saturation=0.7, fliersize=0)#, linecolor=color2)
+    # plt.xticks([0,1], categories)
+    # plt.ylabel('LDDT')
+    # plt.savefig(outfigname+'_all.svg', bbox_inches='tight')
+    # print(len(table[0]), len(table[1]))
+    # print(np.median(table[0]), np.median(table[1]), np.average(table[0]), np.average(table[1]))
+    table = {}
+    for lin in majorlin:
+        df1 = df[df['sp_tree_head'].isin(majorlin[lin])]
+        df2 = df1.loc[(df1['ldo_category'] == 'normal') & (df1['mdo_category'] == 'normal')]
+        normal = [x for x in df2['lddt'].values if str(x)!='nan']
+        df3 = df1.loc[(df1['ldo_category'] == 'normal') & (df1['mdo_category'] == 'long')]
+        long = [x for x in df3['lddt'].values if str(x)!='nan']
+        dades = [normal, long]
+        table[lin] = dades
+    plot_subplots_barplot(table, 4, 3, list(majorlin.keys()), list(majorlin.keys()), outfigname+'_lineages.svg')
 
-# path = args.path+'/'
-# #spTreeFile = args.spTree
+def load_gene_panther_uniprot(inFile):
+    table = {}
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split('\t')[1].split('|')
+        sp,g = data[0], data[2].split('ProtKB=')[1]
+        table[g] = sp
+    return table
 
-# #####outputs
-# alltreeFile = 'alltree.txt'
-# ditFile = 'branch_lenght.txt'
-# ####
+def get_string_gene(g1,s,c, comu, panterg, lddt, outfile):
+    for p in comu:
+        v = lddt[g1][p]
+        if v != 'nan' and v!='':
+            s2 = panterg[p]
+            string = s+'\t'+s2+'\t'+g1+'\t'+p+'\t'+c+'\t'+str(v)
+            print(string, file=outfile)
 
+def get_structure_out(dupFile, foFiles, pref2names, panterGenesFile, outTable):
+    panterg = load_gene_panther_uniprot(panterGenesFile)
+    lddt = {}
+    for f in foFiles:
+        keys = get_keys_hf5(f)
+        for k in keys:
+            df = pd.read_hdf(f, key=k)
+            for index, row in df.iterrows():
+                g1,g2 = row['gene1'], row['gene2']
+                v = row['lddt']
+                if g1 not in lddt:
+                    lddt[g1] = {}
+                lddt[g1][g2] = v
+    outfile = open(outTable, 'w')
+    print('sp1\tsp2\tg1\tg2\tcat\tval', file=outfile)
+    df = pd.read_csv(dupFile,sep='\t')
+    for index, row in df.iterrows():
+        c1,c2 = row['ldo_category'],row['mdo_category']
+        g1,g2 = row['ldo_gene'], row['mdo_gene']
+        s = row['species']
+        if g1 in lddt and g2 in lddt:
+            gen1,gen2 = list(lddt[g1].keys()),list(lddt[g2].keys())
+            comu = list(set(gen1) & set(gen2))
+            if len(comu) != 0:
+                if c1 == 'normal' and c2 == 'normal':
+                    get_string_gene(g1,s,'n1', comu, panterg, lddt, outfile)
+                    get_string_gene(g2,s,'n2', comu, panterg, lddt, outfile)
+                elif c1 == 'normal' and c2 == 'long':
+                    get_string_gene(g1,s,'n3', comu, panterg, lddt, outfile)
+                    get_string_gene(g1,s,'l1', comu, panterg, lddt, outfile)
+    outfile.close()
+        
 
-# if os.path.isfile(alltreeFile) == False:
-#     treeFiles = glob.glob(path +'*/*/genetree.treefile')
-#     print('Number of trees found:',len(treeFiles))
-#     create_allTrees(treeFiles,alltreeFile)
+def get_tables_exp(inFile, outfile):
+    keys = get_keys_hf5(inFile)
+    for k in keys:
+        df = pd.read_hdf(inFile, key=k)
+        values = df.columns.values
+        n = k.replace('/','')
+        string = n +'\t'+str(len(values))
+        print(string,file=outfile)
+        # for e in values:
+        #     string = n+'\t'+e[1]+'\t'+e[0]
+        #     print(string, file=outfile)
 
-# ### analysis
-# genetrees = PA.get_trees_from_file(alltreeFile)
-# print('Number of tree to be analysed:', len(genetrees))
-# get_distFile(genetrees, ditFile)
+#### Plots
+def plot_subplots_barplot(table, rows, cols, samples, names, outname):
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 15), sharex=True, sharey=True) ##Fig1: figsize=(3, 3), (10,4), (15,15)
+    axes = axes.flatten()
+    categories = ['normal-normal','normal-long']
+    i,j = 0,1.1
+    for x,tag in enumerate(samples):
+        dades = table[tag]
+        print(tag, np.median(dades[0]), np.median(dades[1]))
+        p = gmo.get_wilcoxon_rank_sum(dades[0], dades[1])
+        sn = gmo.format_pval(p)
+        sns.boxplot(data=dades, saturation=0.7, ax=axes[x], fliersize=0, palette="PiYG")#, PiYG,PRGn linecolor=color2)
+        x1,x2 = 0,i+1
+        y, h, col, z = j+0.04, 0.05+i/4, 'k', 0.03
+        axes[x].plot([x1, x1, x2, x2], [y-z, y+h-z, y+h-z, y-z], lw=0.5, c=col)
+        axes[x].text((x1+x2)*.5, y+h-z, sn, ha='center', va='bottom', color=col, fontsize=8)
+        name = names[x]
+        axes[x].set_title(name)#, style='italic')#, size=20)
+        axes[x].set_ylim(-1, 1.5) ## Fig1 1.6
+        ticks_to_keep = axes[x].get_yticks()[:5] ### remove some yticks
+        axes[x].set_yticks(ticks_to_keep)
+        axes[x].set_ylabel('PCC')
+    plt.xticks([0,1], categories)#, rotation=45, ha='right')
+    # plt.savefig(outname, bbox_inches='tight')
+    plt.show()
 
-# #spTree,spe2age = PA.load_species_tree(spTreeFile,'no')
-# #print(spe2age)
-# print('End...')
+def plot_subplots_violinplot(table, rows, cols, samples, names, outname):
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 15), sharex=True, sharey=True) ##Fig1: figsize=(4, 4),(10,4), (15,15)
+    axes = axes.flatten()
+    categories = ['normal-normal','normal-long']
+    for x,tag in enumerate(samples):
+        dades = table[tag]
+        p = gmo.get_wilcoxon_rank_sum(dades[0], dades[1])
+        sn = gmo.format_pval(p)
+        if '*' not in sn:
+            print(tag, sn)
+        sns.violinplot(data=dades, palette="PRGn", ax=axes[x], split=True, density_norm="width")
+        name = names[x]
+        axes[x].set_title(name)#, style='italic')#, size=20)
+        axes[x].set_ylim(-1, 1.5) ## Fig1 1.6
+        ticks_to_keep = axes[x].get_yticks()[:5] ### remove some yticks
+        axes[x].set_yticks(ticks_to_keep)
+        axes[x].set_ylabel('delta TAU')
+    plt.xticks([0,1], categories)#, rotation=45, ha='right')
+    plt.savefig(outname, bbox_inches='tight')
+    plt.show()
+
+def plot_subplots_line_pcc(inFile, pref2names, outfigname):
+    df = pd.read_csv(inFile, sep='\t')
+    ordersp = list(set(df[df['lineage']=='Plants']['sp1'].values))+list(set(df[df['lineage']=='Animals']['sp1'].values))
+    species = {x:0 for x in set(list(df['sp1'].values))}
+    for tag in species:
+        df2 = df.loc[(df['sp1'] == tag)]
+        dades = set(list(df2['sp2'].values))
+        species[tag] = len(dades)
+    speciesflt = [x for x in species if species[x]>=3] ### remove species with few outgroups
+    print('number of initial species:',len(species), 'filtered:',len(speciesflt), [x for x in species if x not in speciesflt])
+    species = [x for x in ordersp if x in speciesflt]
+    fig, axes = plt.subplots(nrows=7, ncols=4, figsize=(16,14), sharex=True, sharey=True) ##Fig1: Plants: 4,4 figsize=(15, 10), 3,4
+    axes = axes.flatten()
+    for x,tag in enumerate(species):
+        name = ' '.join(pref2names[tag].split(' ')[:2])
+        name = name.split(' ')[0][0]+'. '+name.split(' ')[1]
+        df2 = df.loc[(df['sp1'] == tag)]
+        sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, ax=axes[x], errorbar=('ci', 95),
+                      palette=sns.color_palette("PiYG", 4)) ## PCC: PiYG, PRGn
+        axes[x].set_title(name, style='italic')
+        axes[x].set_ylabel('PCC')  ## PCC  ## delta TAU
+        axes[x].set_xlabel('Time (MYA)')
+    plt.savefig(outfigname, bbox_inches='tight')
+    plt.show()
+
+def plot_subplots_line_pcc2(inFile, pref2names, outfigname):
+    df = pd.read_csv(inFile, sep='\t')
+    lin = set(df['lineage'].values)
+    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(5,4), sharex=True, sharey=True) ##Fig1: Plants: 4,4 figsize=(15, 10), 3,4
+    axes = axes.flatten()
+    for x,tag in enumerate(lin):
+        df2 = df.loc[(df['lineage'] == tag)]
+        sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, ax=axes[x], errorbar=('ci', 95),
+                      palette=sns.color_palette("PRGn", 4)) ## PCC: PiYG ##PRGn
+        axes[x].set_title(tag)
+    plt.savefig(outfigname, bbox_inches='tight')
+    plt.show()
     
-    
+
+#################
+#### inFiles ####
+#################
+path = '/home/ijulcach/projects/ldo_project/results/'
+pathPlots = path + 'plots/'
+pathTables = path + 'tables/'
+famrateFile = pathTables+'fitted_family_info.tsv'
+speciesFile = '/home/ijulcach/projects/ldo_project/data/panther-18.0/species_tree.nhx'
+
+pccFilePlant = path +'correlation/plant_specific.h5'
+pccFileAnimal = path +'correlation/animal_maincat.h5'
+prefFile = pathTables+ 'nemo2name.txt'
+outFilePlant = path +'outgroup_correlation/plant_specific.h5'
+outFileAnimal = path +'outgroup_correlation/animal_maincat.h5'
+plantTreetime = pathTables + 'plant_species_tree.nwk'
+animalTreetime = pathTables +'animal_species.nwk'
+FoldsFiles = '/home/ijulcach/projects/ldo_project/structure/res_foldseek/'
+UalgFiles = '/home/ijulcach/projects/ldo_project/structure/res/'
+allDupFile = '/home/ijulcach/projects/ldo_project/results/pairwise_tests.tsv'
+majorlinfile = pathTables+'major_lineages_sp.txt'
+panterTimeFile = pathTables+'species_panther.nwk'
+panterGenesFile = '/home/ijulcach/projects/ldo_project/data/panther-18.0/Panther.genesNames.txt'
+expDataPath = '/home/ijulcach/projects/ldo_project/results/expr/'
+
+##################
+#### outfiles ####
+##################
+
+##### Duplication analysis
+majorLinFile = pathTables+'major_lineages_sp.txt'
+node2catFile = pathTables+'nodes2categories.tsv'
+node2catLinFile = pathTables+'nodes2categories.MajorLin.tsv'
+node2catLin_perFile = pathTables+'nodes2categories.MajorLin_per.tsv'
+node2catLin_perCatFile = pathTables+'nodes2categories.MajorLin_per_cat.tsv'
+nodesRanksFile = pathTables+'nodes2categories_numsranksMerge.tsv'
+
+dupFigure1 = pathPlots +'histogram_familyrates.svg'  ## Supplementary Figure 1
+dupFigure2 = pathPlots + 'bar_dups_categories.svg' ## Panel Figure 2
+
+##### PCC and TAU
+outfig1 = pathPlots+'pcc_all.svg'
+outfig2 = pathPlots+'pcc_species.svg'
+outfig3 = pathPlots+'pcc_nodes.svg'
+outfig4 = pathPlots+'tau_all.svg'
+outfig5 = pathPlots+'tau_species.svg'
+outfig6 = pathPlots+'tau_nodes.svg'
+outfig7 = pathPlots+'pcc_outgroup_plant_animal.svg'
+outfig8 = pathPlots+'pcc_outgroup_plant_animal_all.svg'
+outfig9 = pathPlots+'tau_outgroup_plant_animal.svg'
+outfig10 = pathPlots+'tau_outgroup_plant_animal_all.svg'
+outfig11 = pathPlots+'structure_lddt'
+outfig12 = pathPlots+'structure_lddt_outgroup.svg'
+
+outtab1 = pathTables+'outgroup_pcc_analysis_plant.tsv'
+outtab2 = pathTables+'outgroup_pcc_analysis_animal.tsv'
+outtab3 = pathTables+'outgroup_tau_analysis_plant.tsv'
+outtab4 = pathTables+'outgroup_tau_analysis_animal.tsv'
+outtab5 = pathTables+'outgroup_structure.tsv'
+outtab6 = pathTables+'expression_samples.tsv'
+
+
 #######################
 #### PANTHER TREES #### 
 #######################
 ### infiles and outfiles
 
-pathPlots = '/home/ijulcach/projects/ldo_project/results/plots/'
-pathTables = '/home/ijulcach/projects/ldo_project/results/tables/'
-treepath = '/home/ijulcach/projects/ldo_project/data/panther-18.0/trees/'
-speciesFile = '/home/ijulcach/projects/ldo_project/data/panther-18.0/species_tree.nhx'
-expPlantdata = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Samples/'
-taxaFile = '/home/ijulcach/projects/Land_Plants/nemo2taxa.txt'
+# treepath = '/home/ijulcach/projects/ldo_project/data/panther-18.0/trees/'
+# 
+# expPlantdata = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Samples/'
+# taxaFile = '/home/ijulcach/projects/Land_Plants/nemo2taxa.txt'
 
-inFile = pathTables+'pairwise_tests.tsv'
-linFile = pathTables+'major_lineages_sp.txt'
-expPath = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/'
-# outfile1 = pathTables+'plant_exp_pcc_scaler.tsv'
-# outfig1 = pathPlots+'plant_exp_pcc_scaler.svg'
-# outfile1 = pathTables+'plant_exp_pcc_noscaler.tsv'
-# outfig1 = pathPlots+'plant_exp_pcc_noscaler.svg'
-# outfile1 = pathTables+'plant_exp_pcc_zscore.tsv' 
-# outfig1 = pathPlots+'plant_exp_pcc_zscore.svg' 
-# outfile1 = pathTables+'plant_exp_pcc_zscoremedian.tsv'
-# outfig1 = pathPlots+'plant_exp_pcc_zscoremedian.svg'
-# outfile1 = pathTables+'plant_exp_pcc_Snames.zscoreLog.tsv'
-# outfig1 = pathPlots+'plant_exp_pcc_Snames.zscoreLog.svg'
-outfile1 = pathTables+'plant_exp_pcc_zscoreLog.tsv'  ### I use this
-outfig1 = pathPlots+'plant_exp_pcc_zscoreLog.svg'    ### I use this
-outfig2 = pathPlots+'plant_exp_pcc_zscoreLog_nodesS.svg'
-outfig3 = pathPlots+'plant_exp_pcc_zscoreLog_nodesI.svg'
-outfig4 = pathPlots +'plant_exp_pcc_zscoreLog_sp.svg'
-outfig5 = pathPlots +'plant_exp_pcc_zscoreLog_spS.svg'
-outfig6 = pathPlots +'plant_exp_pcc_zscoreLog_spI.svg'
+# inFile = pathTables+'pairwise_tests.tsv'
+# linFile = pathTables+'major_lineages_sp.txt'
+# expPath = '/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/'
+# # outfile1 = pathTables+'plant_exp_pcc_scaler.tsv'
+# # outfig1 = pathPlots+'plant_exp_pcc_scaler.svg'
+# # outfile1 = pathTables+'plant_exp_pcc_noscaler.tsv'
+# # outfig1 = pathPlots+'plant_exp_pcc_noscaler.svg'
+# # outfile1 = pathTables+'plant_exp_pcc_zscore.tsv' 
+# # outfig1 = pathPlots+'plant_exp_pcc_zscore.svg' 
+# # outfile1 = pathTables+'plant_exp_pcc_zscoremedian.tsv'
+# # outfig1 = pathPlots+'plant_exp_pcc_zscoremedian.svg'
+# # outfile1 = pathTables+'plant_exp_pcc_Snames.zscoreLog.tsv'
+# # outfig1 = pathPlots+'plant_exp_pcc_Snames.zscoreLog.svg'
+# outfile1 = pathTables+'plant_exp_pcc_zscoreLog.tsv'  ### I use this
+# outfig1 = pathPlots+'plant_exp_pcc_zscoreLog.svg'    ### I use this
+# outfig2 = pathPlots+'plant_exp_pcc_zscoreLog_nodesS.svg'
+# outfig3 = pathPlots+'plant_exp_pcc_zscoreLog_nodesI.svg'
+# outfig4 = pathPlots +'plant_exp_pcc_zscoreLog_sp.svg'
+# outfig5 = pathPlots +'plant_exp_pcc_zscoreLog_spS.svg'
+# outfig6 = pathPlots +'plant_exp_pcc_zscoreLog_spI.svg'
 
-files = glob.glob('/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/*/*.Gnames.sample.txt')
-outname1 = pathTables+'plant_sampleSPM.tsv'
-outname2 = pathTables + 'plant_sampleSPM_matrix.tsv'
-outfig7 = pathPlots+'plant_samplesSPM.svg'
-outfig8 = pathPlots+'plant_samplesSPMS.svg'
-outfig9 = pathPlots+'plant_samplesSPMI.svg'
-outfig10 = pathPlots+'plant_samplesSPM_sp.svg'
-outfig11 = pathPlots+'plant_samplesSPM_spS.svg'
-outfig12 = pathPlots+'plant_samplesSPM_spI.svg'
-outfig13 = pathPlots+'supplementary_spm_plants.svg'
-outsampTable = pathTables+'sp2number_samples.tsv'
-outfigs = pathPlots+'sp2number_samples.svg'
+# files = glob.glob('/home/ijulcach/projects/ldo_project/data/Plant_expression/Exp_matrices/*/*.Gnames.sample.txt')
+# outname1 = pathTables+'plant_sampleSPM.tsv'
+# outname2 = pathTables + 'plant_sampleSPM_matrix.tsv'
+# outfig7 = pathPlots+'plant_samplesSPM.svg'
+# outfig8 = pathPlots+'plant_samplesSPMS.svg'
+# outfig9 = pathPlots+'plant_samplesSPMI.svg'
+# outfig10 = pathPlots+'plant_samplesSPM_sp.svg'
+# outfig11 = pathPlots+'plant_samplesSPM_spS.svg'
+# outfig12 = pathPlots+'plant_samplesSPM_spI.svg'
+# outfig13 = pathPlots+'supplementary_spm_plants.svg'
+# outsampTable = pathTables+'sp2number_samples.tsv'
+# outfigs = pathPlots+'sp2number_samples.svg'
 
 ### load names
 # sp2name = load_taxa(taxaFile)
@@ -338,25 +744,25 @@ outfigs = pathPlots+'sp2number_samples.svg'
 #     print(string,file=outfile)
 # outfile.close()
 
+##############################
+#### Duplication analysis ####
+##############################
+
 ##### family-specific rate ### Supplementary Figure 1
-# inFile = '/home/ijulcach/projects/ldo_project/results/tables/fitted_family_info.tsv'
-# outfigure1 = pathPlots +'histogram_familyrates.svg'
-# df = pd.read_csv(inFile, sep='\t', header=0)
+# df = pd.read_csv(famrateFile, sep='\t', header=0)
 # ax = sns.histplot(df,x='rate', bins=200)
 # ax.set_title('Histogram of family-specific factor')
 # ax.set_xlabel('Family-specific rate')
 # ylims = ax.get_ylim()
 # plt.vlines(1, ylims[0]-1000, ylims[1]+1000, color='red', linestyle='--')#, ymin=0, ymax=)\n",
 # ax.set_ylim(*ylims)
-# plt.savefig(outfigure1, bbox_inches='tight')
+# plt.savefig(dupFigure1, bbox_inches='tight')
 # plt.show()
 # print(df['rate'].mean())
 
-
-##### Species tree
-
-# lineages = ['Deuterostomia', 'Protostomia', 'Fungi', 'Amoebozoa', 'Excavates',
-#             'Alveolata-Stramenopiles','Viridiplantae', 'Archaea', 'Eubacteria']
+###### Species tree, Creating duplication files
+# lineages = ['Protostomia', 'Deuterostomia', 'Fungi', 'Amoebozoa', 'Excavates',
+            # 'Alveolata-Stramenopiles','Viridiplantae', 'Archaea', 'Eubacteria']
 # indLin = ['NEMVE','TRIAD','MONBE']
 # lineages = {x:set() for x in lineages}
 # lineages.update({x:set([x]) for x in indLin})
@@ -377,7 +783,7 @@ outfigs = pathPlots+'sp2number_samples.svg'
 #                     name = info['S']
 #                     lineages[lin].add(name)
 # i = 0
-# outfile = open(pathTables+'major_lineages_sp.txt','w')
+# outfile = open(majorLinFile,'w')
 # for e in lineages:
 #     string = e+'\t'+str(len(lineages[e]))+'\t'+'; '.join(lineages[e])
 #     print(string,file=outfile)
@@ -388,21 +794,19 @@ outfigs = pathPlots+'sp2number_samples.svg'
 # internal_nodes = ['Bilateria', 'Eumetazoa', 'Metazoa-Choanoflagellida',
 #                   'Opisthokonts', 'Unikonts', 'Eukaryota', 'Bikonts',
 #                   'SAR/HA_supergroup', 'Archaea-Eukaryota', 'LUCA']
-## Node 1: 'Bilateria'
-## Node 2: 'Eumetazoa'
-## Node 3: 'Metazoa-Choanoflagellida'
-## Node 4: 'Opisthokonts'
-## Node 5: 'Unikonts'
-## Node 6: 'Eukaryota'
-## Node 7: 'Bikonts'
-## Node 8: 'SAR/HA_supergroup'
-## Node 9: 'Archaea-Eukaryota'
-## Node 10: 'LUCA'
+# # ## Node 1: 'Bilateria'
+# # ## Node 2: 'Eumetazoa'
+# # ## Node 3: 'Metazoa-Choanoflagellida'
+# # ## Node 4: 'Opisthokonts'
+# # ## Node 5: 'Unikonts'
+# # ## Node 6: 'Eukaryota'
+# # ## Node 7: 'Bikonts'
+# # ## Node 8: 'SAR/HA_supergroup'
+# # ## Node 9: 'Archaea-Eukaryota'
+# # ## Node 10: 'LUCA'
 
-
-##### Get the categories tables
-categories = ['normal-normal', 'short-short', 'long-long', 'normal-short', 
-             'normal-long', 'short-long']
+# ##### Get the categories tables
+categories = ['normal-normal', 'short-short', 'long-long', 'normal-long','normal-short', 'short-long']
 # table = {}
 # dups = {}
 # for line in open(pathTables+'duplication_events_with_stat.tsv'):
@@ -426,7 +830,7 @@ categories = ['normal-normal', 'short-short', 'long-long', 'normal-short',
 #         table[taxa][key] += 1
 # print('Total number of duplications:', np.sum([dups[x] for x in dups]))
 # print('Average duplications per family:', np.mean([dups[x] for x in dups]))
-# outfile = open(pathTables+'nodes2categories.tsv','w')
+# outfile = open(node2catFile,'w')
 # print('Taxa\t'+'\t'.join(categories), file=outfile)
 # for tax in table:
 #     string = tax
@@ -437,7 +841,7 @@ categories = ['normal-normal', 'short-short', 'long-long', 'normal-short',
 
 # table = {x:[0.0]*len(categories) for x in lineages}
 # table.update({x:[0.0]*len(categories) for x in internal_nodes})
-# for line in open(pathTables+'nodes2categories.tsv'):
+# for line in open(node2catFile):
 #     line = line.strip()
 #     data = line.split('\t')
 #     if data[0] != 'Taxa':
@@ -450,113 +854,115 @@ categories = ['normal-normal', 'short-short', 'long-long', 'normal-short',
 #                 if tax in lineages[e]:
 #                     tax = e
 #             table[tax] =[x + y for x, y in zip(table[tax], nums)]
-# outfile = open(pathTables+'nodes2categories.MajorLin.tsv','w')
+# outfile = open(node2catLinFile,'w')
 # print('Taxa\t'+'\t'.join(categories), file=outfile)
 # for tax in table:
 #     string = tax + '\t' + '\t'.join([str(x) for x in table[tax]])
 #     print(string, file=outfile)
 # outfile.close()
 
-##### Plot of the categories
-# outfigure = pathPlots + 'bar_categories.svg'
-# outfigure2 = pathPlots +'bar_dups.svg'
-# df = pd.read_csv(pathTables+'nodes2categories.MajorLin.tsv', sep='\t', header=0)
+###### Plot of the categories ## Figure 2
+# lineages = ['Protostomia', 'Deuterostomia','TRIAD','NEMVE','MONBE', 'Fungi', 'Amoebozoa', 'Excavates',
+#             'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
+# lineages.reverse()
+# df = pd.read_csv(node2catLinFile, sep='\t', header=0)
 # df['total'] = df.sum(numeric_only=True, axis=1)
 # df['totalper']=df['total']*100/df['total'].sum()
-# ax = df.plot(x='Taxa', y='total', kind='barh')
-# # ax.set_xlim([0, 100])
-# plt.savefig(outfigure2, bbox_inches='tight')
-# plt.show()
-# df.to_csv(path_or_buf=pathTables+'nodes2categories.MajorLin_per.tsv', sep='\t', header=True, index=False)
+# df.to_csv(path_or_buf=node2catLin_perFile, sep='\t', header=True, index=False)
+# df = df[df['Taxa'].isin(lineages) == True] ## remove the ones in internal nodes
+# df.sort_values(by=['Taxa'], key=lambda column: column.map(lambda e: lineages.index(e)), inplace=True)
 
-
-# df2 = pd.DataFrame()
+# df2 = pd.DataFrame() ## dataframe of categories
 # for e in categories:
 #     df2[e] = df[e]*100/df['total']
 # df2['Taxa'] = df['Taxa']
-# color = ['#01befe','#ffdd00','#ff7d00','#ff006d','#adff02','#8f00ff']
-# ax = df2.plot(x='Taxa', y=categories, kind='barh', stacked=True, color=color, alpha=.7)
-# plt.savefig(outfigure, bbox_inches='tight')
+# df2.to_csv(path_or_buf=node2catLin_perCatFile, sep='\t', header=True, index=False)
+
+# palette = ['#3182bdff','#9ecae1ff','#deebf7ff','#31a354ff','#addd8eff','#f7fcb9c4']
+# bar_width = 0.4
+# bar_positions = range(len(df))
+# fig, ax = plt.subplots()
+# ax = df2.plot(x='Taxa', y=categories, kind='barh', stacked=True, color=palette, alpha=.7, ax=ax,
+#               figsize=(6, 7.5), width=bar_width)
+
+# ax.barh([p + bar_width for p in bar_positions],df['totalper'], bar_width, color='#808080ff', label='duplications')
+# plt.xticks(fontsize=23)
+# plt.savefig(dupFigure2, bbox_inches='tight')
 # plt.show()
-# df2.to_csv(path_or_buf=pathTables+'nodes2categories.MajorLin_per_cat.tsv', sep='\t', header=True, index=False)
 
-##### Plot of the categories per lineage per node
+
+##### Plot of the categories per lineage per node, Figure 3
 ## Create the file
-# outname1 = pathTables+'nodes2categories_numsranksMerge.tsv'
+species = set()
+lineages = {}
+for line in open(majorLinFile):
+    line = line.strip()
+    data = line.split('\t')
+    lineages[data[0]] = data[2].split('; ')
+    for e in data[2].split('; '):
+        if len(e) <=5 and e.isupper():
+            species.add(e)
+print('Number of species', len(species))
 
-# species = set()
-# lineages = {}
-# for line in open(pathTables+'major_lineages_sp.txt'):
-#     line = line.strip()
-#     data = line.split('\t')
-#     lineages[data[0]] = data[2].split('; ')
-#     for e in data[2].split('; '):
-#         if len(e) <=5 and e.isupper():
-#             species.add(e)
-# print('Number of species', len(species))
+table = {}
+for line in open(node2catFile):
+    line = line.strip()
+    data = line.split('\t')
+    if data[0] != 'Taxa':
+        table[data[0]] = [float(x) for x in data[1:]]
+ranks = {}
+for l in lineages:
+    ranks[l] = {}
+    ranks[l]['internal-'+l[0]] = table[l]
+    for tax in lineages[l]:
+        if tax in species:
+            key = 's-s-'+l[0]
+        else:
+            key = 'internal-'+l[0] ### tax
+        if key not in ranks[l]:
+            ranks[l][key]=[0.0]*len(categories)
+        if tax in table:
+            nums = table[tax]
+            ranks[l][key] = [x + y for x, y in zip(ranks[l][key], nums)]
+outfile = open(nodesRanksFile,'w')
+head = 'Major_Rank\tRank\t'+'\t'.join(categories)
+print(head, file=outfile)
+for l in ranks:
+    for e in ranks[l]:
+        string = l+'\t'+e+'\t'+'\t'.join([str(x) for x in ranks[l][e]])
+        print(string,file=outfile)
+outfile.close()
 
-# table = {}
-# for line in open(pathTables+'nodes2categories.tsv'):
-#     line = line.strip()
-#     data = line.split('\t')
-#     if data[0] != 'Taxa':
-#         table[data[0]] = [float(x) for x in data[1:]]
-# ranks = {}
-# for l in lineages:
-#     ranks[l] = {}
-#     ranks[l]['internal-'+l[0]] = table[l]
-#     for tax in lineages[l]:
-#         if tax in species:
-#             key = 's-s-'+l[0]
-#         else:
-#             key = 'internal-'+l[0] ### tax
-#         if key not in ranks[l]:
-#             ranks[l][key]=[0.0]*len(categories)
-#         if tax in table:
-#             nums = table[tax]
-#             ranks[l][key] = [x + y for x, y in zip(ranks[l][key], nums)]
-# outfile = open(outname1,'w')
-# head = 'Major_Rank\tRank\t'+'\t'.join(categories)
-# print(head, file=outfile)
-# for l in ranks:
-#     for e in ranks[l]:
-#         string = l+'\t'+e+'\t'+'\t'.join([str(x) for x in ranks[l][e]])
-#         print(string,file=outfile)
-# outfile.close()
+#### Create the plot Figure 3
 
-# ## Create the plot
-# outfigure = pathPlots + 'rank_categoriesMerge.svg'
-# outfigure2 = pathPlots +'rank_dupsMerge.svg'
-# dfname1 = path_or_buf=pathTables+'rank_dupMerge.txt'
-# dfname2 = path_or_buf=pathTables+'rank_dupMerge_per.txt'
-
-# df = pd.read_csv(outname1, sep='\t', header=0)
-# color = ['#01befe','#ffdd00','#ff7d00','#ff006d','#adff02','#8f00ff']
-
-# ### sort ranks and create a new dataframe
-# lin_sort = ['Protostomia','Deuterostomia', 'TRIAD', 'NEMVE','MONBE','Fungi', 
-#             'Amoebozoa', 'Excavates','Viridiplantae',
-#             'Alveolata-Stramenopiles', 'Archaea', 'Eubacteria']
-# ind = ['TRIAD', 'NEMVE','MONBE']
-# lin_sort.reverse()
+palette = ['#3182bdff','#9ecae1ff','#deebf7ff','#31a354ff','#addd8eff','#f7fcb9c4']
+lineages = ['Protostomia', 'Deuterostomia', 'Fungi', 'Amoebozoa', 'Excavates', ### we removed 'TRIAD', 'NEMVE','MONBE'
+            'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
+lineages.reverse()
+df = pd.read_csv(nodesRanksFile, sep='\t', header=0) 
+df = df[df['Major_Rank'].isin(lineages) == True] ### we removed 'TRIAD', 'NEMVE','MONBE'
+## calculate the total percentage of duplications
+for index, row in df.iterrows():
+    taxa = df['Major_Rank'].values[index]
+    print(taxa)
+    df2 = df[df['Major_Rank'] == taxa]
+    total = df2.sum(numeric_only=True, axis=1).sum()  # getting the total number of duplications per lineage
+    num = row.values[:]
+    print(row.values)
+    #     df2['totalper']=df2['total']*100/df2['total'].sum()
+    # total = df2.sum(numeric_only = True)
+    # print(total)
+    
 # df_all = pd.DataFrame()
-# for mrank in lin_sort:
-#     print(mrank)
-#     df2 = df[df.Major_Rank.isin([mrank])]
+# for taxa in lineages:
+#     df2 = df[df['Major_Rank'] == taxa]
+#     print(df2)
 #     df2 = df2.drop(['Major_Rank'], axis=1)
-#     # #### sort when using tax
-#     # ranks = [x for x in lineages[mrank] if x not in species]
-#     # ranks.append('s-s-'+mrank[0])
-#     #### end sort
 #     ranks = ['s-s-'+mrank[0],'internal-'+mrank[0]]
 #     ranks.reverse()
 #     rank_category = pd.CategoricalDtype(categories=ranks, ordered=True) ## to sort in order of list
-#     if len(ranks) >1:
-#         df2['Rank'] = df2['Rank'].astype(rank_category)
-#         df2 = df2.sort_values(by='Rank')
-#     if mrank in ind:
-#         df2 = df2.drop(df2[df2['Rank'] == 's-s-'+mrank[0]].index, axis=0)
-    
+#     df2['Rank'] = df2['Rank'].astype(rank_category)
+#     df2 = df2.sort_values(by='Rank')
 #     df2['total'] = df2.sum(numeric_only=True, axis=1)
 #     df2['totalper']=df2['total']*100/df2['total'].sum()
 #     df3 = pd.DataFrame().reindex_like(df2)
@@ -569,79 +975,77 @@ categories = ['normal-normal', 'short-short', 'long-long', 'normal-short',
 #         df_all = df3
 #     else:
 #         df_all = pd.concat([df_all, df3], axis=0)
-# df_all.to_csv(dfname1, sep='\t', header=True, index=False)
-# df_all.to_csv(dfname2, sep='\t', header=True, index=False)
 # ### end sorting
 # df_all.set_index('Rank', inplace=True)
 # plt.clf()
 # fig, ax = plt.subplots()
 # bar_width = 0.35
 
-# df_all.plot(y=categories, kind='barh', stacked=True, color=color, alpha=.7,
+# df_all.plot(y=categories, kind='barh', stacked=True, color=palette, alpha=.7,
 #                 figsize=(8, 10), width=bar_width, ax=ax)
 
 # bar_positions = range(len(df_all))
 # ax.barh([p + bar_width for p in bar_positions],df_all['totalper'], bar_width, 
-#         color='grey', label='duplications')
-# plt.savefig(outfigure, bbox_inches='tight')
+#         color='#808080ff', label='duplications')
+# # plt.savefig(outfigure, bbox_inches='tight') ##Supplementary Fig 3
 
 # plt.show()
 
 
 #### Getting the names of the gene expression matrices and panther
-expPlantdata = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/'
-expPlantdata = '/home/ijulcach/projects/ldo_project/data/Animal_expression/'
+# expPlantdata = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/'
+# expPlantdata = '/home/ijulcach/projects/ldo_project/data/Animal_expression/'
 
-animals = ['XENTR', 'DANRE', 'CANLF']
+# animals = ['XENTR', 'DANRE', 'CANLF']
 
-key = animals[2]
-genes = set()
-for line in open(expPlantdata+key+'/'+key+'.newMatrix.txt'): #'.cds.fa'):
-    line = line.strip()
-    # if '>' in line:
-    #     genes.add(line.split('>')[1])
-    data = line.split('\t')
-    if data[0] != 'genes':
-        genes.add(data[0])#.split('_')[0])
+# key = animals[2]
+# genes = set()
+# for line in open(expPlantdata+key+'/'+key+'.newMatrix.txt'): #'.cds.fa'):
+#     line = line.strip()
+#     # if '>' in line:
+#     #     genes.add(line.split('>')[1])
+#     data = line.split('\t')
+#     if data[0] != 'genes':
+#         genes.add(data[0])#.split('_')[0])
 
-# dades = {}
-# for line in open(expPlantdata+key+'/ensemble2rat.txt'): #'/AGI2uniprot.txt'):
+# # dades = {}
+# # for line in open(expPlantdata+key+'/ensemble2rat.txt'): #'/AGI2uniprot.txt'):
+# #     line = line.strip()
+# #     data = line.split('\t')
+# #     if data[1] not in dades:
+# #         dades[data[1]] = []
+# #     dades[data[1]].append(data[0])
+# #     # dades[data[1].split('-')[0]] =data[0].split('.')[0]
+
+# table = {}
+# for line in open(expPlantdata+key+'/'+key+'.genesNames.txt'):
 #     line = line.strip()
 #     data = line.split('\t')
-#     if data[1] not in dades:
-#         dades[data[1]] = []
-#     dades[data[1]].append(data[0])
-#     # dades[data[1].split('-')[0]] =data[0].split('.')[0]
+#     name = data[1] #'|'.join(data)
+#     n = name.split('|')[1]#.split('=')[1]#.split('.')[0]
+#     if 'Ensembl' in name:
+#         n = n.split('=')[1].split('.')[0]
+#     if n not in table:
+#         table[n] = name
+#     # if 'EnsemblGenome' in data[1]:
+#     #     n = data[1].split('=')[1]
+#     # n = data[2].split('=')[1]
+#     # n = data[1].split('=')[1].replace('CISIN_','orange1.').replace('mg','m.g')
+#         # table[n] = name
 
-table = {}
-for line in open(expPlantdata+key+'/'+key+'.genesNames.txt'):
-    line = line.strip()
-    data = line.split('\t')
-    name = data[1] #'|'.join(data)
-    n = name.split('|')[1]#.split('=')[1]#.split('.')[0]
-    if 'Ensembl' in name:
-        n = n.split('=')[1].split('.')[0]
-    if n not in table:
-        table[n] = name
-    # if 'EnsemblGenome' in data[1]:
-    #     n = data[1].split('=')[1]
-    # n = data[2].split('=')[1]
-    # n = data[1].split('=')[1].replace('CISIN_','orange1.').replace('mg','m.g')
-        # table[n] = name
-
-# outfile = open(expPlantdata+key+'/'+key+'.conversion.panther.txt','w')
-i = 0
-for e in table:
-    # if e in dades:
-    #     for g in dades[e]:
-    if e not in genes:
-        print(e)
-        i +=1
-                # print(e, table[e])
-#                 string = g+'\t'+table[e]
-#                 print(string,file=outfile)
-# outfile.close()
-print(key, len(table), i, i*100/len(table)) 
+# # outfile = open(expPlantdata+key+'/'+key+'.conversion.panther.txt','w')
+# i = 0
+# for e in table:
+#     # if e in dades:
+#     #     for g in dades[e]:
+#     if e not in genes:
+#         print(e)
+#         i +=1
+#                 # print(e, table[e])
+# #                 string = g+'\t'+table[e]
+# #                 print(string,file=outfile)
+# # outfile.close()
+# print(key, len(table), i, i*100/len(table)) 
 
 ################################
 #### Analysis of expression ####     
@@ -753,8 +1157,8 @@ print(key, len(table), i, i*100/len(table))
 
 ##### Analysis of pcc
 
-color = ['#01befe','#ffdd00','#ff7d00','#ff006d','#adff02','#8f00ff']
-color2 = [matplotlib.colors.to_rgb(x) for x in color]
+# color = ['#01befe','#ffdd00','#ff7d00','#ff006d','#adff02','#8f00ff']
+# color2 = [matplotlib.colors.to_rgb(x) for x in color]
 
 ## Plot of the taxa together and for node
 # table = {}
@@ -1135,4 +1539,99 @@ color2 = [matplotlib.colors.to_rgb(x) for x in color]
 # fig.text(0.5, 0.02, 'SPM', ha='center', fontsize=15)
 # plt.savefig(outfig13, bbox_inches='tight')
 # plt.show()
-    
+
+
+
+
+
+
+#############################################
+#############################################
+######### PCC and TAU analysis final ########
+#############################################
+#############################################
+
+#### All PCC
+# table = {'plant':[[],[]], 'animal':[[],[]]}
+# table['plant'] = get_data_h5(pccFilePlant, table['plant'],'pcc')
+# table['animal'] =get_data_h5(pccFileAnimal, table['animal'], 'pcc')
+# samples = ['animal','plant']
+# names = ['Animals', 'Plants']
+# plot_subplots_barplot(table, 1, 2, samples, names, outfig1)
+# table = {'plant':[[],[]], 'animal':[[],[]]}
+# table['plant'] = get_data_h5(pccFilePlant, table['plant'],'tau')
+# table['animal'] =get_data_h5(pccFileAnimal, table['animal'], 'tau')
+# # plot_subplots_barplot(table, 1, 2, samples, names, outfig4)
+# plot_subplots_violinplot(table, 1, 2, samples, names, outfig4)
+
+# #### PCC species
+# pref2names = load_taxa(prefFile)
+# table = {}
+# table = species_pcc_analisis(pccFilePlant, table, 'pcc')
+# plants = list(table.keys())
+# table = species_pcc_analisis(pccFileAnimal, table, 'pcc')
+# species = plants+[x for x in list(table.keys()) if x not in plants]
+# names = [pref2names[x] for x in species]
+# names = [x.split(' ')[0][0]+'. '+x.split(' ')[1] for x in names] ## Cut Sci. names
+# # plot_subplots_barplot(table, 6, 6, species, names, outfig2)
+# table = {}
+# table = species_pcc_analisis(pccFilePlant, table, 'tau')
+# table = species_pcc_analisis(pccFileAnimal, table, 'tau')
+# plot_subplots_violinplot(table, 6, 6, species, names, outfig5)
+
+
+#### PCC nodes internal terminal
+# table = {}
+# table = nodes_pcc_analisis(pccFilePlant, table, 'plant', 'pcc')
+# table = nodes_pcc_analisis(pccFileAnimal, table, 'animal', 'pcc')
+# samples = list(table.keys())
+# # plot_subplots_barplot(table, 1, 4, samples, samples, outfig3)
+# table = {}
+# table = nodes_pcc_analisis(pccFilePlant, table, 'plant', 'tau')
+# table = nodes_pcc_analisis(pccFileAnimal, table, 'animal', 'tau')
+# plot_subplots_violinplot(table, 1, 4, samples, samples, outfig6)
+
+#### outgroup PCC
+# pref2names = load_taxa(prefFile)
+##Plants
+# load_data_corr_out(outFilePlant, outtab1, 'Plants')
+# add_time_dataframe(outtab1, plantTreetime, pref2names) ### change the temp file
+##Animals
+# load_data_corr_out(outFileAnimal, outtab2, 'Animals')
+# add_time_dataframe(outtab2, animalTreetime, pref2names)
+# plot_subplots_line_pcc(pathTables+'outgroup_pcc_analysis_plant_animal.tsv', pref2names, outfig7)
+# plot_subplots_line_pcc2(pathTables+'outgroup_pcc_analysis_plant_animal.tsv', pref2names, outfig8)
+
+#### outgroup TAU
+# load_data_tau_out(outFilePlant, outtab3, 'Plants')
+# add_time_dataframe(outtab3, plantTreetime, pref2names) ### change the temp file
+# load_data_tau_out(outFileAnimal, outtab4, 'Animals')
+# add_time_dataframe(outtab4, animalTreetime, pref2names) ### change the temp file
+# plot_subplots_line_pcc(pathTables+'outgroup_tau_analysis_plant_animal.tsv' , pref2names, outfig9)
+# plot_subplots_line_pcc2(pathTables+'outgroup_tau_analysis_plant_animal.tsv' , pref2names, outfig10)
+
+#### Structure USagl
+### All together and per major lineages
+# usfiles = glob.glob(UalgFiles+'*_1.h5')
+# fofiles = glob.glob(FoldsFiles+'*_1.h5')
+# get_structure_data(allDupFile, fofiles, outfig11, majorlinfile)
+
+### outgroup
+# fofiles = glob.glob(FoldsFiles+'*_2.h5')
+# fofiles += glob.glob(FoldsFiles+'*_3.h5')
+# pref2names = load_taxa(prefFile)
+# # get_structure_out(allDupFile, fofiles, pref2names, panterGenesFile, outtab5)
+# # add_time_dataframe(outtab5, panterTimeFile, pref2names)
+# # plot_subplots_line_pcc(outtab5, pref2names, outfig12)
+# df = pd.read_csv(outtab5+'_lin', sep='\t')
+# lineages = ['Viridiplantae', 'Deuterostomia', 'Protostomia', 'Fungi']
+# for lin in lineages:
+#     df2 = df.loc[df['lineage']==lin]
+#     ax = sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, errorbar=('ci', 95))
+#     plt.show()
+
+#### Tables
+# outfile = open(outtab6, 'w')
+# get_tables_exp(expDataPath+'animal_maincat_tpm_expr.h5', outfile)
+# get_tables_exp(expDataPath+'plant_specific_tpm_expr.h5', outfile)
+# outfile.close()

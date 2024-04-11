@@ -125,18 +125,18 @@ def trait2hog(inFile,hogFile):
     
     
 
-parser = argparse.ArgumentParser(description="get the genes that are in the mQTL")
-parser.add_argument("-q", "--qFile", dest="qFile", required=True, help="tab separated mqtl file")
-parser.add_argument("-g", "--genoFile", dest="genoFile", required=True, help="gff file of the genome")
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description="get the genes that are in the mQTL")
+# parser.add_argument("-q", "--qFile", dest="qFile", required=True, help="tab separated mqtl file")
+# parser.add_argument("-g", "--genoFile", dest="genoFile", required=True, help="gff file of the genome")
+# args = parser.parse_args()
 
-qFile = args.qFile
-gffFile = args.genoFile
+# qFile = args.qFile
+# gffFile = args.genoFile
 
-#analysis_qtl(gffFile, qFile)
-trait2hog(qFile,gffFile)
+# #analysis_qtl(gffFile, qFile)
+# trait2hog(qFile,gffFile)
 
-print("End..")
+# print("End..")
 
 ### Plots
 # path = "/home/ijulca/projects/QTL/"
