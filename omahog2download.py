@@ -20,7 +20,7 @@ def get_list_hogs(inFile):
         data = line.split('.')[0]
         hogs.add(data)
     print('Number of hogs',len(hogs))
-    return hogs
+    return list(hogs)
 
 def get_fasta_hogs(inFile, path):
     omaw = 'https://oma-stage.vital-it.ch/oma/hog/'
@@ -34,7 +34,7 @@ def get_fasta_hogs(inFile, path):
             outdir1 = outpath+str(i+1)+'-'+str(z)+'/'
             gmo.create_folder(outdir1)
             for j in range(i,z):
-                hog = hogs[i]
+                hog = hogs[j]
                 name = hog.split(':')[1]
                 outdir2 = outdir1+name+'/'
                 gmo.create_folder(outdir2)
