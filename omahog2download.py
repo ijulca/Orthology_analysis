@@ -13,7 +13,7 @@ import general_modules as gmo
 from omadb import Client #https://dessimozlab.github.io/pyomadb/build/html/
 c = Client()
 import pyoma.browser.db
-from pyoma.browser.model import ProteinEntry
+from pyoma.browser.models import ProteinEntry
 db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jun2023/data/OmaServer.h5')
 
 
