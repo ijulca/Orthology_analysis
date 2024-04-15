@@ -90,7 +90,7 @@ def hog2fasta(inFile, outpath):
                 for p in db.member_of_hog_id(hog):
                     pe = ProteinEntry(db, p)
                     fout.write(f">{pe.omaid} {pe.canonicalid}\n")
-                    print(pe.sequence())
+                    print(pe.sequence)
                     fout.write(pe.sequence())
                     fout.write("\n\n")
 
