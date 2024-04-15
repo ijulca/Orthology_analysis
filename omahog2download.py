@@ -86,7 +86,7 @@ def hog2fasta(inFile, outpath):
                     print('Done for..', hog)
     else:
         for hog in hogs:
-            with open(outFile, 'wt') as fout:
+            with open(f'hog_{hog}.fa', 'wt') as fout:
                 for p in db.member_of_hog_id(hog):
                     pe = ProteinEntry(db, p)
                     fout.write(f">{pe.omaid} {pe.canonicalid}\n")
