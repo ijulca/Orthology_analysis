@@ -14,7 +14,7 @@ from omadb import Client #https://dessimozlab.github.io/pyomadb/build/html/
 c = Client()
 import pyoma.browser.db
 from pyoma.browser.models import ProteinEntry
-db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jun2023/data/OmaServer.h5')
+db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2023/data/OmaServer.h5')
 
 
 def get_list_hogs(inFile):
