@@ -87,7 +87,7 @@ parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to down
 args = parser.parse_args()
 
 inFile = args.inFile
-outpath = args.outpath
+outpath = args.outpath+'/'
 
 if args.tag == 'h':
     print('Downloading HOGS...')
