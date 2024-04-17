@@ -71,7 +71,7 @@ def mnemonic2fasta(inFile, outpath):
                 identifier = iso.canonicalid
                 description = iso.description
                 record = SeqRecord(
-                Seq.Seq(seq),
+                Seq(seq),
                 id=identifier,
                 description=description)
             all_seq.append(record)
