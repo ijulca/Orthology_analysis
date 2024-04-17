@@ -55,6 +55,7 @@ def hog2fasta(inFile, outpath):
 
 
 def mnemonic2fasta(inFile, outpath):
+    gmo.create_folder(outpath)
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
     names = gmo.load_list(inFile)
     spcode2taxaid = {}
@@ -94,6 +95,7 @@ if args.tag == 'h':
     hog2fasta(inFile, outpath)
 elif args.tag == 'p':
     print('Downloading proteomes...')
+    mnemonic2fasta(inFile, outpath)
 
 
 
