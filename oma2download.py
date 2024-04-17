@@ -58,14 +58,13 @@ def mnemonic2fasta(inFile, outpath):
     gmo.create_folder(outpath)
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
     names = gmo.load_list(inFile)
-    spcode2taxaid = {}
     for gen in genomes:
         taxid  = gen.ncbi_taxon_id
         name = gen.sciname
         taxa = gen.uniprot_species_code
         if taxa in names:
             all_seq = list()
-            spcode2taxaid[taxa] = taxa +'\t'+taxid+'\t'+name
+            print(taxa +'\t'+str(taxid)+'\t'+name)
             main_isos = [ProteinEntry(db, e) for e in db.main_isoforms(taxa)]
             for iso in main_isos:
                 seq = iso.sequence
