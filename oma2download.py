@@ -70,7 +70,7 @@ def mnemonic2fasta(inFile, outpath):
                 seq = iso.sequence
                 identifier = iso.canonicalid
                 description = iso.description
-                record = SeqRecord.SeqRecord(
+                record = SeqRecord(
                 Seq.Seq(seq),
                 id=identifier,
                 description=description)
