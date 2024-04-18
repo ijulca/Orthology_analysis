@@ -64,18 +64,17 @@ def mnemonic2fasta(inFile, outpath):
         taxa = gen.uniprot_species_code
         if taxa in names:
             all_seq = list()
-            print(taxa +'\t'+str(taxid)+'\t'+name)
             main_isos = [ProteinEntry(db, e) for e in db.main_isoforms(taxa)]
+            print(taxa +'\t'+str(taxid)+'\t'+name+'\t'+str(len(main_isos)))
             for iso in main_isos:
                 seq = iso.sequence
-                identifier = iso.canonicalid
+                identifier = iso.omaid
                 description = "" #iso.description
                 record = SeqRecord(
                 Seq(seq),
                 id=identifier,
                 description=description)
-            all_seq.append(record)
-            print(all_seq)
+                all_seq.append(record)
             with open(outpath+ taxa +  ".fa", "w") as output_handle:
                 SeqIO.write(all_seq, output_handle, "fasta")
     
