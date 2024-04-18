@@ -75,6 +75,7 @@ def mnemonic2fasta(inFile, outpath):
                 id=identifier,
                 description=description)
             all_seq.append(record)
+            print(all_seq)
             with open(outpath+ taxa +  ".fa", "w") as output_handle:
                 SeqIO.write(all_seq, output_handle, "fasta")
     
