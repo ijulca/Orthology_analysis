@@ -69,11 +69,11 @@ def mnemonic2fasta(inFile, outpath):
             for iso in main_isos:
                 seq = iso.sequence
                 identifier = iso.omaid
-                description = iso.description
+                description = "" #iso.description
                 record = SeqRecord(
                 Seq(seq),
-                id=identifier)#,
-                #description=description) ## add description
+                id=identifier,
+                description=description)
             all_seq.append(record)
             with open(outpath+ taxa +  ".fa", "w") as output_handle:
                 SeqIO.write(all_seq, output_handle, "fasta")
