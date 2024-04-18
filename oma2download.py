@@ -68,7 +68,7 @@ def mnemonic2fasta(inFile, outpath):
             main_isos = [ProteinEntry(db, e) for e in db.main_isoforms(taxa)]
             for iso in main_isos:
                 seq = iso.sequence
-                identifier = iso.canonicalid
+                identifier = iso.omaid
                 description = iso.description
                 record = SeqRecord(
                 Seq(seq),
