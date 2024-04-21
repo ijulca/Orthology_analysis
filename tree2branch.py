@@ -42,6 +42,18 @@ def check_spider(log):
                 toprint = True
     return toprint
 
+def load_major_lin(inFile, tag='no'):
+    table = {}
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split('\t')
+        if tag == 'no':
+            table[data[0]] = data[2].split('; ')
+        else:
+            for e in data[2].split('; '):
+                table[e] = data[0]
+    return table
+
 def load_taxa(inFile):
     table = {}
     for line in open(inFile):
@@ -50,21 +62,6 @@ def load_taxa(inFile):
         table[data[0]] = data[1]#.split(';')[-1].strip()
     return table
 
-def create_allTrees(treeFiles,outFile):
-    print('creating treeFile...')
-    outfile = open(outFile, 'w')
-    for treeFile in treeFiles:
-        totree = check_spider(treeFile.replace('treefile','log'))
-        if totree == True:
-            group = treeFile.split('/')[-2]
-            tree = gmo.load_list(treeFile)
-            if len(tree) == 1:
-                print(group+'\t'+tree[0],file=outfile)
-            else:
-                print('ERROR...', treeFile)
-        else:
-            print('ERROR...bad tree', treeFile)
-    outfile.close()
 
 def get_tree_panther(inFile):
     i = 0
@@ -398,74 +395,32 @@ def add_time_dataframe(outtab1, plantTreetime, pref2names):
     t = ete3.Tree(plantTreetime, format=1)
     for leaf in t:
         leaf.name = table[leaf.name]
+    leaves = t.get_leaf_names()
     outfile = open(outtab1+'_temp','w')
     for line in open(outtab1):
         line = line.strip()
         data = line.split('\t')
         if data[0] == 'sp1':
             line += '\ttime'
+            print(line, file=outfile)
         else:
-            n = t.get_common_ancestor([data[0], data[1]])
-            node = t&data[0]
-            i = 0
-            while node != n:
-                i += node.dist
-                node = node.up
-            line += '\t' +str(i)
-        print(line, file=outfile)
+            if data[0] in leaves and data[1] in leaves:
+                n = t.get_common_ancestor([data[0], data[1]])
+                node = t&data[0]
+                i = 0
+                while node != n:
+                    i += node.dist
+                    node = node.up
+                line += '\t' +str(i)
+                print(line, file=outfile)
     outfile.close()
         
-def load_major_lin(inFile):
-    table = {}
-    for line in open(inFile):
-        line = line.strip()
-        data = line.split('\t')
-        if data[0] not in table:
-            table[data[0]] = set()
-        table[data[0]].add(data[0])
-        for e in data[2].split('; '):
-            table[data[0]].add(e)
-    return table
-
 def change2float(x):
     try:
         return float(x)
     except:
         return np.nan
     
-def get_structure_data(dupFile, foFiles, outfigname, majorlinFile):
-    majorlin = load_major_lin(majorlinFile)
-    categories = ['normal-normal','normal-long']
-    df = pd.read_csv(dupFile,sep='\t')
-    df['genes'] = df['ldo_gene']+'-'+df['mdo_gene']
-    df['lddt'] = np.nan
-    for f in foFiles:
-        keys = get_keys_hf5(f)
-        for k in keys:
-            stframe = pd.read_hdf(f, key=k)
-            stframe["lddt"] = stframe["lddt"].apply(change2float) ### change to float
-            stframe['genes'] = stframe['gene1']+'-'+stframe['gene2']
-            df.loc[df.genes.isin(stframe.genes), ['lddt']] = stframe['lddt'].values
-    # df2 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'normal')]
-    # df3 = df.loc[(df['ldo_category'] == 'normal') & (df['mdo_category'] == 'long')]
-    # table = [[x for x in list(df2['lddt'].values) if str(x)!='nan'], [x for x in list(df3['lddt'].values) if str(x)!='nan']]
-    # ax = sns.boxplot(data=table, saturation=0.7, fliersize=0)#, linecolor=color2)
-    # plt.xticks([0,1], categories)
-    # plt.ylabel('LDDT')
-    # plt.savefig(outfigname+'_all.svg', bbox_inches='tight')
-    # print(len(table[0]), len(table[1]))
-    # print(np.median(table[0]), np.median(table[1]), np.average(table[0]), np.average(table[1]))
-    table = {}
-    for lin in majorlin:
-        df1 = df[df['sp_tree_head'].isin(majorlin[lin])]
-        df2 = df1.loc[(df1['ldo_category'] == 'normal') & (df1['mdo_category'] == 'normal')]
-        normal = [x for x in df2['lddt'].values if str(x)!='nan']
-        df3 = df1.loc[(df1['ldo_category'] == 'normal') & (df1['mdo_category'] == 'long')]
-        long = [x for x in df3['lddt'].values if str(x)!='nan']
-        dades = [normal, long]
-        table[lin] = dades
-    plot_subplots_barplot(table, 4, 3, list(majorlin.keys()), list(majorlin.keys()), outfigname+'_lineages.svg')
-
 def load_gene_panther_uniprot(inFile):
     table = {}
     for line in open(inFile):
@@ -483,37 +438,37 @@ def get_string_gene(g1,s,c, comu, panterg, lddt, outfile):
             string = s+'\t'+s2+'\t'+g1+'\t'+p+'\t'+c+'\t'+str(v)
             print(string, file=outfile)
 
-def get_structure_out(dupFile, foFiles, pref2names, panterGenesFile, outTable):
-    panterg = load_gene_panther_uniprot(panterGenesFile)
-    lddt = {}
-    for f in foFiles:
-        keys = get_keys_hf5(f)
-        for k in keys:
-            df = pd.read_hdf(f, key=k)
-            for index, row in df.iterrows():
-                g1,g2 = row['gene1'], row['gene2']
-                v = row['lddt']
-                if g1 not in lddt:
-                    lddt[g1] = {}
-                lddt[g1][g2] = v
-    outfile = open(outTable, 'w')
-    print('sp1\tsp2\tg1\tg2\tcat\tval', file=outfile)
-    df = pd.read_csv(dupFile,sep='\t')
+def get_structure_out(structureFile, categories, majorlin, outtable, outfigure):
+    outfile = open(outtable, 'w')
+    print('sp1\tsp2\tgene_ldo\tgene_mdo\tout_gene\tlineage\tcat\tval', file=outfile)
+    df = pd.read_csv(structureFile, sep='\t')
+    data = [[],[]]
     for index, row in df.iterrows():
-        c1,c2 = row['ldo_category'],row['mdo_category']
-        g1,g2 = row['ldo_gene'], row['mdo_gene']
-        s = row['species']
-        if g1 in lddt and g2 in lddt:
-            gen1,gen2 = list(lddt[g1].keys()),list(lddt[g2].keys())
-            comu = list(set(gen1) & set(gen2))
-            if len(comu) != 0:
-                if c1 == 'normal' and c2 == 'normal':
-                    get_string_gene(g1,s,'n1', comu, panterg, lddt, outfile)
-                    get_string_gene(g2,s,'n2', comu, panterg, lddt, outfile)
-                elif c1 == 'normal' and c2 == 'long':
-                    get_string_gene(g1,s,'n3', comu, panterg, lddt, outfile)
-                    get_string_gene(g1,s,'l1', comu, panterg, lddt, outfile)
-    outfile.close()
+        if row['fam_id'] != 'fam_id':
+            c = categories[row['ldo_category']+'-'+row['mdo_category']]
+            g1,g2, go = row['ldo_gene'], row['mdo_gene'], row['out_gene']
+            sp = row['species']
+            lin = majorlin[sp] ## where the dup is
+            outsp = row['outgroup_species']
+            s1,sl,sm = row['struct_ldo_mdo_lddt'], row['struct_ldo_out_lddt'],row['struct_mdo_out_lddt']
+            if str(s1) !='nan':
+                if c == 'symmetric':
+                    data[0].append(float(s1))
+                    if str(sl) !='nan' and str(sm) != 'nan':
+                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
+                        # string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tn2\t'+str(float(sm))
+                        print(string1,file=outfile)
+                        # print(string2,file=outfile)
+                elif c == 'asymmetric':
+                    data[1].append(float(s1))
+                    if str(sl) !='nan' and str(sm) != 'nan':
+                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
+                        # string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tl1\t'+str(float(sm))
+                        print(string1,file=outfile)
+                        # print(string2,file=outfile)
+    ax = sns.boxplot(data=data, saturation=0.7, fliersize=0, palette="PiYG")
+    plt.savefig(outfigure, bbox_inches='tight')
+    plt.show()
         
 
 def get_tables_exp(inFile, outfile):
@@ -614,6 +569,30 @@ def plot_subplots_line_pcc2(inFile, pref2names, outfigname):
     plt.show()
     
 
+def plot_subplots_line_structure(inFile, pref2names, outfigname):
+    df = pd.read_csv(inFile, sep='\t')
+    ax = sns.lineplot(data=df, x="time", y="val", hue="cat", markers=True, errorbar=('ci', 95))
+    ax.set_ylabel('Structural differences')
+    plt.savefig(outfigname+'_all.svg')
+    ### Lineages
+    lineages = ['Protostomia', 'Deuterostomia','TRIAD','NEMVE','MONBE', 'Fungi', 'Amoebozoa', 'Excavates',
+                'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
+    lineages_df = set(df['lineage'].values)
+    fig, axes = plt.subplots(nrows=6, ncols=2, figsize=(16,14), sharex=True, sharey=True)
+    axes = axes.flatten()
+    i = 0
+    for lin in lineages:
+        if lin in lineages_df:
+            df2 = df[df['lineage'] == lin]
+            sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, ax=axes[i], errorbar=('ci', 95),
+                      palette=sns.color_palette("PiYG", 2)) ## PCC: PiYG, PRGn
+            axes[i].set_title(lin)
+            axes[i].set_ylabel('Structural difference')  ## PCC  ## delta TAU
+            axes[i].set_xlabel('Time (MYA)')
+            i +=1
+    plt.savefig(outfigname+'_lineages.svg', bbox_inches='tight')
+    plt.show()
+
 #################
 #### inFiles ####
 #################
@@ -634,10 +613,11 @@ animalTreetime = pathTables +'animal_species.nwk'
 FoldsFiles = '/home/ijulcach/projects/ldo_project/structure/res_foldseek/'
 UalgFiles = '/home/ijulcach/projects/ldo_project/structure/res/'
 allDupFile = '/home/ijulcach/projects/ldo_project/results/pairwise_tests.tsv'
-majorlinfile = pathTables+'major_lineages_sp.txt'
 panterTimeFile = pathTables+'species_panther.nwk'
 panterGenesFile = '/home/ijulcach/projects/ldo_project/data/panther-18.0/Panther.genesNames.txt'
 expDataPath = '/home/ijulcach/projects/ldo_project/results/expr/'
+
+structureFile = '/home/ijulcach/projects/ldo_project/structure/structure_results_FOLDSEEK.tsv.gz'
 
 ##################
 #### outfiles ####
@@ -673,16 +653,19 @@ outtab1 = pathTables+'outgroup_pcc_analysis_plant.tsv'
 outtab2 = pathTables+'outgroup_pcc_analysis_animal.tsv'
 outtab3 = pathTables+'outgroup_tau_analysis_plant.tsv'
 outtab4 = pathTables+'outgroup_tau_analysis_animal.tsv'
-outtab5 = pathTables+'outgroup_structure.tsv'
 outtab6 = pathTables+'expression_samples.tsv'
 
+####### Structure
+structTable1 = pathTables +'outgroup_structure.tsv'
+structfig1 = pathPlots+'lddt_paralgos.svg'
+structfig2 = pathPlots+'lddt_outgroup'
 
 ##############################
 #### Duplication analysis ####
 ##############################
 
-df = pd.read_csv(expect_branchFile, sep='\t')
-print(df.columns.values)
+# df = pd.read_csv(expect_branchFile, sep='\t')
+# print(df.columns.values)
 
 # categories = ['normal-normal', 'short-short', 'long-long', 'normal-long','normal-short', 'short-long']
 
@@ -913,558 +896,22 @@ print(df.columns.values)
 
 # plt.show()
     
+##################################
+##################################
+####### Structure analysis #######
+##################################
+##################################
 
+categories = {'normal-normal':'symmetric', 'short-short':'symmetric', 'long-long':'symmetric',
+            'normal-long':'asymmetric', 'normal-short':'asymmetric', 'short-long':'asymmetric',
+            'short-normal':'asymmetric'}
 
-#### Getting the names of the gene expression matrices and panther
-# expPlantdata = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/'
-# expPlantdata = '/home/ijulcach/projects/ldo_project/data/Animal_expression/'
+majorlin = load_major_lin(majorLinFile, 'inv')
+# get_structure_out(structureFile, categories, majorlin, structTable1, structfig1)
 
-# animals = ['XENTR', 'DANRE', 'CANLF']
-
-# key = animals[2]
-# genes = set()
-# for line in open(expPlantdata+key+'/'+key+'.newMatrix.txt'): #'.cds.fa'):
-#     line = line.strip()
-#     # if '>' in line:
-#     #     genes.add(line.split('>')[1])
-#     data = line.split('\t')
-#     if data[0] != 'genes':
-#         genes.add(data[0])#.split('_')[0])
-
-# # dades = {}
-# # for line in open(expPlantdata+key+'/ensemble2rat.txt'): #'/AGI2uniprot.txt'):
-# #     line = line.strip()
-# #     data = line.split('\t')
-# #     if data[1] not in dades:
-# #         dades[data[1]] = []
-# #     dades[data[1]].append(data[0])
-# #     # dades[data[1].split('-')[0]] =data[0].split('.')[0]
-
-# table = {}
-# for line in open(expPlantdata+key+'/'+key+'.genesNames.txt'):
-#     line = line.strip()
-#     data = line.split('\t')
-#     name = data[1] #'|'.join(data)
-#     n = name.split('|')[1]#.split('=')[1]#.split('.')[0]
-#     if 'Ensembl' in name:
-#         n = n.split('=')[1].split('.')[0]
-#     if n not in table:
-#         table[n] = name
-#     # if 'EnsemblGenome' in data[1]:
-#     #     n = data[1].split('=')[1]
-#     # n = data[2].split('=')[1]
-#     # n = data[1].split('=')[1].replace('CISIN_','orange1.').replace('mg','m.g')
-#         # table[n] = name
-
-# # outfile = open(expPlantdata+key+'/'+key+'.conversion.panther.txt','w')
-# i = 0
-# for e in table:
-#     # if e in dades:
-#     #     for g in dades[e]:
-#     if e not in genes:
-#         print(e)
-#         i +=1
-#                 # print(e, table[e])
-# #                 string = g+'\t'+table[e]
-# #                 print(string,file=outfile)
-# # outfile.close()
-# print(key, len(table), i, i*100/len(table)) 
-
-################################
-#### Analysis of expression ####     
-################################
-
-# expmat = glob.glob(expPath+'*/')
-# expsp = [x.split('/')[-2] for x in expmat]
-# print('Species with expression data:',len(expsp))
-
-### get the lineages of plants
-# table = {}
-# for line in open(linFile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     table[data[0]] = data[2].split('; ')
-# viridi = table['Viridiplantae']
-# species = [x for x in viridi if len(x) <=5 and x.isupper()]
-# inter = [x for x in viridi if x not in species]
-
-# #### get the duplications
-# dades = {}
-# sp2genes = {}
-# for line in open(inFile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     if data[0] != 'fam_id':
-#         taxa = data[4] ## node where the duplication happened
-#         k1,k2 = data[16:18]
-#         sp,g1,g2 = data[19:] ## species and gene names of the duplication
-#         if sp in expsp: ## analising only sp with expression
-#             if taxa not in dades:
-#                 dades[taxa] = {x:[] for x in categories}
-#             key1 = k1+'-'+k2
-#             key2 = k2+'-'+k1
-#             if key1 in dades[taxa]:
-#                 key = key1
-#             elif key2 in dades[taxa]:
-#                 key = key2
-#                 g1,g2 = g2,g1
-#             dades[taxa][key].append(sp+'--'+g1+'--'+g2)
-#             if sp not in sp2genes:
-#                 sp2genes[sp] = {}
-#             sp2genes[sp][g1+'--'+g2] = 'None'
-
-#### get expression values, pearson correlation
-# for f in expmat:
-#     sp = f.split('/')[-2]
-#     print(sp)
-#     gnames = get_conversion(f+sp+'.conversion.panther.txt')
-#     df = pd.read_csv(f+sp+'.Gnames.tpm.av', sep='\t', header=0, index_col=0) # .Gnames.tpm.av
-#     expgenes = df.index.values
-#     ex = 0
-#     ### Scaler normalization
-#     # scaler = StandardScaler()
-#     # data_scaler = scaler.fit_transform(df)
-#     # df = pd.DataFrame(data_scaler, columns=df.columns,index=df.index)
-#     for g in list(sp2genes[sp]):
-#         g1,g2 = g.split('--')
-#         if g1 in gnames and g2 in gnames:
-#             p1,p2 = gnames[g1], gnames[g2]
-#             if p1 in expgenes and p2 in expgenes:
-#                 row1, row2 = df.loc[p1].values, df.loc[p2].values ## use values for Zlog
-#                 if np.sum(row1) == 0 or np.sum(row2) == 0: ### removing genes with only ceros
-#                     pass
-#                 else:
-#                     # x = (row1-row1.mean())/row1.std() ## z-score ## can use median too
-#                     # y = (row2-row2.mean())/row2.std()
-#                     # x = list(row1/row1.max())
-#                     # y = list(row2/row2.max())
-#                     x = [(math.log2(x+1)-np.median([math.log2(y+1) for y in row1]))/np.std([math.log2(y+1) for y in row1]) for x in row1]
-#                     y = [(math.log2(x+1)-np.median([math.log2(y+1) for y in row2]))/np.std([math.log2(y+1) for y in row2]) for x in row2]
-#                     corr,_ = pearsonr(x, y)
-#                     sp2genes[sp][g] = corr
-#             else:
-#                 ex +=1
-#             ### continue with Scaler df
-#             # if np.sum(row1) == 0: ## avoid rows of 0
-#             #     x = list(row1.values)
-#             # else:
-#             #     x = list(row1/row1.max())
-#             # if np.sum(row2) == 0:
-#             #     y = list(row2.values)
-#             # else:
-#             #     y = list(row2/row2.max())
-#             # corr,_ = pearsonr(x, y)
-#             # sp2genes[sp][g] = corr
-# print('genes not in expression',ex)
-# outfile = open(outfile1, 'w')
-# print('Taxa\tCAT\tSpecies\tgene1\tgene2\tpcc',file=outfile)
-# for tax in dades:
-#     for cat in categories:
-#         data = dades[tax][cat]
-#         if len(data) == 0:
-#             string = tax+'\t'+cat+'\t'+'None'+'\tNone\tNone\tNone'
-#             print(string,file=outfile)
-#         else:
-#             for e in data:
-#                 sp,g1,g2 = e.split('--')
-#                 string = tax+'\t'+cat+'\t'+sp+'\t'+g1+'\t'+g2
-#                 g = g1+'--'+g2
-#                 if g in sp2genes[sp]:
-#                     string += '\t'+str(sp2genes[sp][g])
-#                 else:
-#                     string += '\tNone'
-#                 print(string, file=outfile)
-
-# outfile.close()
-
-
-##### Analysis of pcc
-
-# color = ['#01befe','#ffdd00','#ff7d00','#ff006d','#adff02','#8f00ff']
-# color2 = [matplotlib.colors.to_rgb(x) for x in color]
-
-## Plot of the taxa together and for node
-# table = {}
-# for line in open(outfile1):
-#     line = line.strip()
-#     data = line.split('\t')
-#     taxa,key,v = data[0],data[1],data[-1]
-#     if taxa != 'Taxa':
-#         if key not in table:
-#             table[key] = []
-#         if v != 'None' and v!='nan':
-#             # table[key].append(float(v)) ## outfig1
-#             if len(taxa) <=5 and taxa.isupper(): ## species, outfig2
-#                 # table[key].append(float(v))
-#                 pass
-#             else:
-#                 table[key].append(float(v)) ## internal, outfig3
-
-# plot_box_pval(categories, table, outfig3) ##outfig1, outfig2,outfig3
-
-##### plot per species
-# table = {}
-# for line in open(outfile1):
-#     line = line.strip()
-#     data = line.split('\t')
-#     taxa,key,sp,v = data[0],data[1],data[2],data[-1]
-#     if taxa != 'Taxa':
-#         if sp not in table:
-#             table[sp] = {x:[] for x in categories}
-#         if v != 'None' and v!='nan':
-#             # table[sp][key].append(float(v)) ## outfig4
-#             if len(taxa) <=5 and taxa.isupper(): ## species, outfig5
-#                 # table[sp][key].append(float(v))
-#                 pass
-#             else:
-#                 table[sp][key].append(float(v)) ## internal, outfig6
-
-# plot_box_pval_sp(categories, table, outfig6) ##outfig4, outfig5,outfig6
-
-
-####### SPM analysis
-
-# genes2panther = {}
-# table = {}
-# for f in files:
-#     sp = f.split('/')[-2]
-#     gnames = get_conversion(f.split('.')[0]+'.conversion.panther.txt')
-#     genes2panther.update(gnames)
-#     for line in open(f):
-#         line = line.strip()
-#         data = line.split('\t')
-#         table[data[0]] = data[2].split('; ')
-#     print(sp)
-
-# outfile1 = open(outname1, 'w')
-
-# for line in open(inFile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     if data[0] != 'fam_id':
-#         taxa = data[4] ## node where the duplication happened
-#         k1,k2 = data[16:18]
-#         sp,g1,g2 = data[19:] ## species and gene names of the duplication
-#         if sp in expsp: ## analising only sp with expression
-#             key1 = k1+'-'+k2
-#             key2 = k2+'-'+k1
-#             if key1 in categories:
-#                 key = key1
-#             elif key2 in categories:
-#                 key = key2
-#                 g1,g2 = g2,g1
-#             if g1 in genes2panther and g2 in genes2panther:
-#                 p1,p2 = genes2panther[g1], genes2panther[g2]
-#                 if p1 in table and p2 in table:
-#                     sam1, sam2 = table[p1], table[p2]
-#                     if set(sam1) == set(sam2):
-#                         SPMdif = 0
-#                     else:
-#                         if 'Ubiquitous' in sam1 and 'Ubiquitous' not in sam2:
-#                             SPMdif = 3
-#                         else:
-#                             if len(list(set(sam1) & set(sam2))) >0:
-#                                 SPMdif = 2
-#                             else:
-#                                 SPMdif = 1
-#                     string = taxa+'\t'+key+'\t'+g1+'\t'+g2+'\t'+p1+'\t'+p2+'\t'+sp
-#                     string += '\t'+'; '.join(sam1)+'\t'+'; '.join(sam2)+'\t'+str(SPMdif)
-#                     print(string, file=outfile1)
-# outfile1.close()
-
-# table = {}
-# for line in open(outname1):
-#     line = line.strip()
-#     data = line.split('\t')
-#     taxa = data[0]
-#     if data[1] not in table:
-#         table[data[1]] = {}
-#     k = data[-1]
-#     if k not in table[data[1]]:
-#         table[data[1]][k] = 0
-#     # table[data[1]][k]+=1 ## figure 7
-#     if len(taxa) <=5 and taxa.isupper():
-#         # table[data[1]][k]+=1 ## figure 8
-#         pass
-#     else:
-#         table[data[1]][k]+=1 ## figure 9
-
-# outfile = open(outname2, 'w')
-# nums = ['0','1','2','3']
-# head = 'categories\t'+'\t'.join(nums)
-# print(head, file=outfile)
-# for e in categories:
-#     string = e
-#     tot = np.sum([table[e][n] for n in nums if n in table[e]])
-#     for n in nums:
-#         if n in table[e]:
-#             v = table[e][n]*100/tot ## get the percentage
-#         else:
-#             v = 0
-#         string += '\t'+ str(v)
-#     print(string,file=outfile)
-# outfile.close()
-
-# df = pd.read_csv(outname2, sep='\t', header=0, index_col=0)
-# print(df.sum(axis=1, numeric_only=True))
-# ax = sns.heatmap(df, annot=True, cmap='YlOrBr')#, vmax=10)
-# plt.savefig(outfig9, bbox_inches='tight')
-# plt.show()
-
-
-#### per species
-# table = {}
-# for line in open(outname1):
-#     line = line.strip()
-#     data = line.split('\t')
-#     taxa, sp, k = data[0], data[-4], data[-1]
-#     if len(data)>0: ### figure 10, just to have the if
-#     # if len(taxa) <=5 and taxa.isupper(): ## figure 11
-#     #     pass
-#     # else:  ## figure 12
-#         if sp not in table:
-#             table[sp] = {}
-#         if data[1] not in table[sp]:
-#             table[sp][data[1]] = {}
-#         if k not in table[sp][data[1]]:
-#             table[sp][data[1]][k] = 0
-#         table[sp][data[1]][k] +=1
-
-# fig, axes = plt.subplots(nrows=4, ncols=5, figsize=(15, 10), sharex=True, sharey=True)
-# axes = axes.flatten()
-# for i,sp in enumerate((list(table.keys()))):
-#     print(sp)
-#     outfile = open(outname2, 'w')
-#     nums = ['0','1','2','3']
-#     head = 'categories\t'+'\t'.join(nums)
-#     print(head, file=outfile)
-#     dades = table[sp]
-#     for e in categories:
-#         if e in dades:
-#             tot = np.sum([dades[e][x] for x in nums if x in dades[e]])
-#             string = e
-#             for n in nums:
-#                 if n in dades[e]:
-#                     v = dades[e][n]*100/tot
-#                 else:
-#                     v = 0
-#                 string += '\t'+str(v)
-#         else:
-#             string = e+'\t0\t0\t0\t0'
-#         print(string,file=outfile)
-#     outfile.close()    
-#     df = pd.read_csv(outname2, sep='\t', header=0, index_col=0)
-#     sns.heatmap(df, annot=True, cmap='YlOrBr', ax=axes[i])
-#     axes[i].set_title(sp)
-# plt.savefig(outfig10, bbox_inches='tight') ### Figure 10,11,12
-# plt.show()
-
-
-    
-# ##### Changing annotation:
-# path = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/'
-# infile = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/SRA_annot_all.tsv'
-# outname = '/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/SRA_annot_all.tsv2'
-
-# species = ['AMBTC','BRANA','HELAN','MANES','MEDTR','PHYPA','SETIT','SOLTU','WHEAT','ARATH',
-#            'CAPAN','CUCSA','MAIZE','MARPO','ORYSJ','POPTR','SELML','SOLLC','SOYBN','VITVI']
-
-# # organs = ['leaf','root', 'stem','meristem','flower'] 
-
-# key1 = 'phloem'
-# key2 = 'fruit'
-
-# k = 'stem'
-
-# i = 0
-# outfile = open(outname,'w')
-# for line in open(infile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     name = data[4].lower()
-#     g = data[5]
-#     s = data[6]
-#     if s == key1:# and key1 in line:# and s == key2:
-#         print(line)
-#         data[5:] = [k,s]
-#         i += 1
-#     line = '\t'.join(data)
-#     print(line,file=outfile)
-# outfile.close()
-# print(i)
-
-#### animals:
-    
-# def get_unique_species(table,list2):
-#     list2 = [x.split('(')[0] if '(' in x else x for x in list2]
-#     species = {}
-#     for u in table:
-#         list1 = table[u]
-#         sp = [x for x in list1 if x not in list2]
-#         for s in sp:
-#             if s not in species:
-#                 species[s] = []
-#             species[s].append(u)
-#     new_sp = [s + '('+','.join(species[s])+')' for s in species]
-#     print('unique', len(species.keys()))
-#     return new_sp
-    
-# inFile = '/home/ijulcach/projects/ldo_project/data/animal_entity/animal_uberon.txt'
-# outname = inFile+'2'
-
-# key = "bladder"
-# k = 'bladder organ'
-
-# juntos, u  = {}, ''
-# for line in open(inFile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     n = data[1]
-#     if key in n and 'gallbladder' not in n:
-#         if n == k:
-#             u = data[0]
-#         else:
-#             juntos[data[0]] = data[3].split('; ')
-#     else:
-#         if n == k:
-#             u = data[0]
-
-# print(len(juntos), juntos)
-# print('join',u)
-# outfile = open(outname, 'w')
-# for line in open(inFile):
-#     line = line.strip()
-#     data = line.split('\t')
-#     if data[0] in juntos:
-#         pass
-#     else:
-#         if data[0] == u:
-#             species = data[3].split('; ')
-#             new = get_unique_species(juntos,species)
-#             if len(new)!=0:
-#                 data[2] = str(int(data[2])+len(new))
-#                 data[3] += '; '+'; '.join(new)
-#                 line = '\t'.join(data)
-#                 if len(data) == 4:
-#                     line += '\t'+'; '.join(list(juntos.keys()))
-#                 else:
-#                     line += '; '.join(list(juntos.keys()))
-#             else:
-#                 if len(data) == 4:
-#                     line += '\t'+'; '.join(list(juntos.keys()))
-#                 else:
-#                     line += '; '.join(list(juntos.keys()))
-#         print(line,file=outfile)
-# outfile.close()
-    
-
-
-############## Ploting distribution of mean and median of leaves
-# files = glob.glob('/home/ijulcach/projects/ldo_project/Alex_analysis/ldo_project_2023/data/Plant_expression/Exp_matrices/*/*.fltMatrix.txt')
-
-# for f in files:
-#     n = f.split('.')[0]
-#     sp = n.split('/')[-1]
-#     print(n)
-#     dades = [[],[]]
-#     for line in open(f):
-#         line = line.strip()
-#         data = line.split('\t')
-#         if data[0] == 'genes' or data[0] == 'Snames':
-#             pass
-#         elif data[0] == 'Gnames':
-#             pos = []
-#             for j,e in enumerate(data[1:]):
-#                 if e == 'leaf':
-#                     pos.append(j)
-#         else:
-#             tpm = [float(x) for x in data[1:]]
-#             values = []
-#             for p in pos:
-#                 values.append(tpm[p])
-#             dades[0].append(round(np.mean(values),2))
-#             dades[1].append(round(np.median(values),2))
-
-#     ax = plt.boxplot(dades)
-#     plt.title(label=sp)
-#     plt.savefig(n+'.leaf.mean_median.svg', bbox_inches='tight')
-#     plt.show()
-
-#################### Ploting the number of samples per species
-
-# table, organs = {}, []
-# for p in expmat:
-#     sp = p.split('/')[-2]
-#     print(sp)
-#     f = p+sp+'.fltMatrix.txt'
-#     for line in open(f):
-#         line = line.strip()
-#         data = line.split('\t')
-#         if data[0] == 'Gnames':
-#             samples = data[1:]
-#             table[sp] = {x:samples.count(x) for x in set(samples)}
-#             organs += list(set(samples))
-# organs = list(set(organs))
-# print('Number of samples:', len(organs))
-# outfile = open(outsampTable, 'w')
-# head = 'Species\tMnemonic'+'\t'+'\t'.join(organs)
-# print(head,file=outfile)
-# for sp in table:
-#     string = sp2name[sp]+'\t'+sp
-#     for o in organs:
-#         if o in table[sp]:
-#             string += '\t'+str(table[sp][o])
-#         else:
-#             string += '\t0'
-#     print(string,file=outfile)
-# outfile.close()
-
-# df = pd.read_csv(outsampTable, sep='\t', header=0, index_col=0)
-# fig, ax = plt.subplots(figsize=(15,10)) 
-# ax = sns.heatmap(df, annot=True, cmap='Blues', vmax=10)
-# plt.savefig(outfigs, bbox_inches='tight')
-# plt.show()
-
-
-######################## SPM supplementary plot
-# fig, axes = plt.subplots(nrows=5, ncols=4, figsize=(10, 14), sharex=True, sharey=True)
-# axes = axes.flatten()
-# for i,p in enumerate(expmat):
-#     sp = p.split('/')[-2]
-#     species = sp2name[sp]
-#     f = p+sp+'.Gnames.spm'
-#     num = []
-#     for line in open(f):
-#         line = line.strip()
-#         data = line.split('\t')
-#         if data[0]=='#gene' or data[0] == 'Samples' or data[0]=='Gnames' or data[0]=='Snames': 
-#             pass
-#         else:
-#             for d in data[1:]:
-#                 num.append(float(d))
-#     num_sort = sorted(num, reverse=True)
-#     x = int(float(5*len(num))/float(100))
-#     n = num_sort[x]
-#     print(sp, n)
-#     ### plot
-#     df = pd.DataFrame(num_sort)
-#     c = 'lightsteelblue'
-#     df.hist(bins=99, grid=False, color = c, ec=c, ax=axes[i])
-#     axes[i].set_title(species, fontsize=12, style='italic')
-#     plt.yscale('log')
-#     axes[i].axvline(x=n, ymin=0, ymax=1, color='#ff0000ff', linestyle='dashed', linewidth=1.5)
-#     x = round(n,1)
-#     ymin, ymax = plt.ylim()
-#     axes[i].text(x + 0.08, ymax/4, f'x: {x}', color='red')#, rotation=90)
-#     axes[i].tick_params(axis='both', which='both', length=0)
-    
-# fig.text(0.02, 0.5, 'counts (log-scale)', va='center', rotation='vertical', fontsize=15)
-# fig.text(0.5, 0.02, 'SPM', ha='center', fontsize=15)
-# plt.savefig(outfig13, bbox_inches='tight')
-# plt.show()
-
-
-
+pref2names = load_taxa(prefFile)
+# add_time_dataframe(structTable1, panterTimeFile, pref2names)
+plot_subplots_line_structure(structTable1, pref2names, structfig2)
 
 
 
@@ -1533,11 +980,6 @@ print(df.columns.values)
 # plot_subplots_line_pcc(pathTables+'outgroup_tau_analysis_plant_animal.tsv' , pref2names, outfig9)
 # plot_subplots_line_pcc2(pathTables+'outgroup_tau_analysis_plant_animal.tsv' , pref2names, outfig10)
 
-#### Structure USagl
-### All together and per major lineages
-# usfiles = glob.glob(UalgFiles+'*_1.h5')
-# fofiles = glob.glob(FoldsFiles+'*_1.h5')
-# get_structure_data(allDupFile, fofiles, outfig11, majorlinfile)
 
 ### outgroup
 # fofiles = glob.glob(FoldsFiles+'*_2.h5')
