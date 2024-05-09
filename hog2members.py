@@ -24,15 +24,15 @@ parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list o
 args = parser.parse_args()
 
 inFile = args.inFile
-
+hog = 'HOG:'+inFile
 # hogs = gmo.load_list(inFile)
-outfile = open(inFile.split(':')[1]+'.members.tsv','w')
-data = pyoma.browser.models.HOG(db, inFile)
+outfile = open(inFile+'.members.tsv','w')
+data = pyoma.browser.models.HOG(db, hog)
 # for hog in hogs:
 #     data = pyoma.browser.models.HOG(db, hog)
 level = data.level
 members = [x.omaid for x in data.members]
-string = inFile+'\t'+level+'\t'+'; '.join(members)
+string = hog+'\t'+level+'\t'+'; '.join(members)
 print(string,file=outfile)
 outfile.close()
     
