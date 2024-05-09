@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Sun Apr 21 10:39:05 2024
@@ -13,6 +13,7 @@ import general_modules as gmo
 import pyoma.browser.db
 from pyoma.browser.models import ProteinEntry
 db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2023/data/OmaServer.h5')
+#db = pyoma.browser.db.Database('/home/ijulcach/Programs/DataBases/OmaServer.h5')
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -24,13 +25,14 @@ args = parser.parse_args()
 
 inFile = args.inFile
 
-hogs = gmo.load_list(inFile)
-outfile = open(inFile+'.members.tsv','w')
-for hog in hogs:
-    data = pyoma.browser.models.HOG(db, hog)
-    level = data.level
-    members = [x.omaid for x in data.members]
-    string = hog+'\t'+level+'\t'+'; '.join(members)
-    print(string,file=outfile)
+# hogs = gmo.load_list(inFile)
+outfile = open(inFile.split(':')[1]+'.members.tsv','w')
+data = pyoma.browser.models.HOG(db, inFile)
+# for hog in hogs:
+#     data = pyoma.browser.models.HOG(db, hog)
+level = data.level
+members = [x.omaid for x in data.members]
+string = inFile+'\t'+level+'\t'+'; '.join(members)
+print(string,file=outfile)
 outfile.close()
     

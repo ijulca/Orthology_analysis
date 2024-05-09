@@ -440,13 +440,18 @@ def get_string_gene(g1,s,c, comu, panterg, lddt, outfile):
 
 def get_structure_out(structureFile, categories, majorlin, outtable, outfigure):
     outfile = open(outtable, 'w')
-    print('sp1\tsp2\tgene_ldo\tgene_mdo\tout_gene\tlineage\tcat\tval', file=outfile)
-    df = pd.read_csv(structureFile, sep='\t')
+    # print('sp1\tsp2\tgene_ldo\tgene_mdo\tout_gene\tlineage\tcat\tval', file=outfile)
+    print('sp1\tsp2\tgene\tout_gene\tlineage\tcat\tval', file=outfile)
+    df = pd.read_csv(structureFile, sep='\t', low_memory=False)
     data = [[],[]]
+    genes = set()
     for index, row in df.iterrows():
         if row['fam_id'] != 'fam_id':
             c = categories[row['ldo_category']+'-'+row['mdo_category']]
             g1,g2, go = row['ldo_gene'], row['mdo_gene'], row['out_gene']
+            genes.add(g1)
+            genes.add(g2)
+            genes.add(go)
             sp = row['species']
             lin = majorlin[sp] ## where the dup is
             outsp = row['outgroup_species']
@@ -455,18 +460,25 @@ def get_structure_out(structureFile, categories, majorlin, outtable, outfigure):
                 if c == 'symmetric':
                     data[0].append(float(s1))
                     if str(sl) !='nan' and str(sm) != 'nan':
-                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
-                        # string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tn2\t'+str(float(sm))
+                        # string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
+                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+go+'\t'+lin+'\tn1\t'+str(float(sl))
+                        string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tn2\t'+str(float(sm))
                         print(string1,file=outfile)
-                        # print(string2,file=outfile)
+                        print(string2,file=outfile)
                 elif c == 'asymmetric':
                     data[1].append(float(s1))
                     if str(sl) !='nan' and str(sm) != 'nan':
-                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
-                        # string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tl1\t'+str(float(sm))
+                        # string1 = sp+'\t'+outsp+'\t'+g1+'\t'+g2+'\t'+go+'\t'+lin+'\t'+c+'\t'+str(float(sl)-float(sm))
+                        string1 = sp+'\t'+outsp+'\t'+g1+'\t'+go+'\t'+lin+'\tn3\t'+str(float(sl))
+                        string2 = sp+'\t'+outsp+'\t'+g2+'\t'+go+'\t'+lin+'\tl1\t'+str(float(sm))
                         print(string1,file=outfile)
-                        # print(string2,file=outfile)
-    ax = sns.boxplot(data=data, saturation=0.7, fliersize=0, palette="PiYG")
+                        print(string2,file=outfile)
+    print('symmetric mean:',np.mean(data[0]), 'asymmetric mean:',np.mean(data[1]))
+    print('symmetric median:',np.median(data[0]), 'asymmetric median:',np.median(data[1]))
+    print('Number of genes with structural data:', len(genes))
+    ax = sns.boxplot(data=data, fliersize=0, palette=['#3182bdff','#e6550dff'])
+    plt.xticks([0,1], ['symmetric','asymmetric'])
+    plt.ylabel('Structural similarity (Foldseek LDDT)')
     plt.savefig(outfigure, bbox_inches='tight')
     plt.show()
         
@@ -571,26 +583,29 @@ def plot_subplots_line_pcc2(inFile, pref2names, outfigname):
 
 def plot_subplots_line_structure(inFile, pref2names, outfigname):
     df = pd.read_csv(inFile, sep='\t')
-    ax = sns.lineplot(data=df, x="time", y="val", hue="cat", markers=True, errorbar=('ci', 95))
-    ax.set_ylabel('Structural differences')
+    ax = sns.lineplot(data=df, x="interval", y="val", hue="cat", markers=True, errorbar=('ci', 95), 
+                      palette=['#9ecae1ff','#3182bdff','#fdae6bff','#e6550dff'])
+    plt.xlim(9.5, 0.5)
+    ax.set_ylabel('Structural similarity (Foldseek LDDT)')
+    ax.set_xlabel('Time interval')
     plt.savefig(outfigname+'_all.svg')
-    ### Lineages
-    lineages = ['Protostomia', 'Deuterostomia','TRIAD','NEMVE','MONBE', 'Fungi', 'Amoebozoa', 'Excavates',
-                'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
-    lineages_df = set(df['lineage'].values)
-    fig, axes = plt.subplots(nrows=6, ncols=2, figsize=(16,14), sharex=True, sharey=True)
-    axes = axes.flatten()
-    i = 0
-    for lin in lineages:
-        if lin in lineages_df:
-            df2 = df[df['lineage'] == lin]
-            sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, ax=axes[i], errorbar=('ci', 95),
-                      palette=sns.color_palette("PiYG", 2)) ## PCC: PiYG, PRGn
-            axes[i].set_title(lin)
-            axes[i].set_ylabel('Structural difference')  ## PCC  ## delta TAU
-            axes[i].set_xlabel('Time (MYA)')
-            i +=1
-    plt.savefig(outfigname+'_lineages.svg', bbox_inches='tight')
+    # ### Lineages
+    # lineages = ['Protostomia', 'Deuterostomia','TRIAD','NEMVE','MONBE', 'Fungi', 'Amoebozoa', 'Excavates',
+    #             'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
+    # lineages_df = set(df['lineage'].values)
+    # fig, axes = plt.subplots(nrows=6, ncols=2, figsize=(16,14), sharex=True, sharey=True)
+    # axes = axes.flatten()
+    # i = 0
+    # for lin in lineages:
+    #     if lin in lineages_df:
+    #         df2 = df[df['lineage'] == lin]
+    #         sns.lineplot(data=df2, x="time", y="val", hue="cat", markers=True, ax=axes[i], errorbar=('ci', 95),
+    #                   palette=sns.color_palette("PiYG", 4)) ## PCC: PiYG, PRGn
+    #         axes[i].set_title(lin)
+    #         axes[i].set_ylabel('Structural similarity (Foldseek LDDT)')  ## PCC  ## delta TAU
+    #         axes[i].set_xlabel('Time (MYA)')
+    #         i +=1
+    # plt.savefig(outfigname+'_lineages.svg', bbox_inches='tight')
     plt.show()
 
 #################
@@ -660,6 +675,27 @@ structTable1 = pathTables +'outgroup_structure.tsv'
 structfig1 = pathPlots+'lddt_paralgos.svg'
 structfig2 = pathPlots+'lddt_outgroup'
 
+
+#####################################
+########### Joining all files #######
+#####################################
+# infile1 = '/home/ijulcach/projects/ldo_project/results/expected_branches_pthr18.tsv.gz'
+# structureFile = '/home/ijulcach/projects/ldo_project/structure/structure_results_FOLDSEEK.tsv.gz'
+
+# stu = pd.read_csv(structureFile, sep='\t', low_memory=False)
+# print(stu.columns.values)
+# stu = stu[stu['fam_id']!='fam_id']
+# famid = set(stu['fam_id'].values)
+# print(len(famid))
+
+# df = pd.read_csv(infile1, sep='\t')
+# print(df.columns.values)
+# df2 = df[df['over_duplication'] == False]
+# df2 = df2[df2['filter_edge'] == False]
+# famid2 = set(df2['fam_id'].values)
+
+
+
 ##############################
 #### Duplication analysis ####
 ##############################
@@ -728,29 +764,43 @@ structfig2 = pathPlots+'lddt_outgroup'
 
 ##### Get the categories tables
 
+######structureFile = pathTables+'duplication_events_with_stat.tsv' ## we used this file, old analysis
+# df = pd.read_csv(structureFile, sep='\t', low_memory=False)
+# df = df[df['fam_id']!='fam_id']
+# print(df.columns.values)
+# duplications = {}
 # table = {}
-# dups = {}
-# for line in open(pathTables+'duplication_events_with_stat.tsv'):
-#     line = line.strip()
-#     data = line.split()
-#     if data[0] != 'fam_id':
-#         taxa = data[4] ### sp_tree_head
-#         fam = data[0]
-#         p1,p2 = float(data[14]),float(data[15]) ## all normal normal have a p >sig
-#         if fam not in dups:
-#             dups[fam] = 0
-#         dups[fam] += 1  
-#         key1 = data[16]+'-'+data[17]
-#         key2 = data[17]+'-'+data[16]
+# for index, row in df.iterrows():
+#     key = ''
+#     taxa = row['sp_tree_head']
+#     fam = row['fam_id']
+#     p1,p2 = float(row['ldo_delta_exp_p']), float(row['mdo_delta_exp_p'])
+#     c1,c2 = row['ldo_category'], row['mdo_category']
+#     if c1 == 'normal' and c2 =='normal': ## checking the p-val, but all is ok
+#         if p1 > 0.05 and p2 > 0.05:
+#             key = c1+'-'+c2
+#     else:
+#         if c1 == 'normal' and p1 > 0.05:
+#             if c2 != 'normal' and p2 < 0.05:
+#                 key = c1+'-'+c2
+#         elif c2 == 'normal' and p2>0.05:
+#             if c1 != 'normal' and p1 < 0.05:
+#                 key = c2+'-'+c1 ### normal-short (short-normal)
+#         else:
+#             if p1 < 0.05 and p2 <0.05:
+#                 key = c1+'-'+c2
+#     if key != '':
+#         if fam not in duplications:
+#             duplications[fam] = 0
+#         duplications[fam] +=1
 #         if taxa not in table:
 #             table[taxa] = {x:0 for x in categories}
-#         if key1 in table[taxa]:
-#             key = key1
-#         elif key2 in table[taxa]:
-#             key = key2
 #         table[taxa][key] += 1
-# print('Total number of duplications:', np.sum([dups[x] for x in dups]))
-# print('Average duplications per family:', np.mean([dups[x] for x in dups]))
+
+# print('Total number of duplications:', np.sum([duplications[x] for x in duplications]))
+# print('Average duplications per family:', np.mean([duplications[x] for x in duplications]))
+
+
 # outfile = open(node2catFile,'w')
 # print('Taxa\t'+'\t'.join(categories), file=outfile)
 # for tax in table:
@@ -782,7 +832,7 @@ structfig2 = pathPlots+'lddt_outgroup'
 #     print(string, file=outfile)
 # outfile.close()
 
-###### Plot of the categories ## Figure 2
+##### Plot of the categories ## Figure 2
 # lineages = ['Protostomia', 'Deuterostomia','TRIAD','NEMVE','MONBE', 'Fungi', 'Amoebozoa', 'Excavates',
 #             'Viridiplantae','Alveolata-Stramenopiles','Archaea', 'Eubacteria']
 # lineages.reverse()
@@ -902,16 +952,16 @@ structfig2 = pathPlots+'lddt_outgroup'
 ##################################
 ##################################
 
-categories = {'normal-normal':'symmetric', 'short-short':'symmetric', 'long-long':'symmetric',
-            'normal-long':'asymmetric', 'normal-short':'asymmetric', 'short-long':'asymmetric',
-            'short-normal':'asymmetric'}
+# categories = {'normal-normal':'symmetric', 'short-short':'symmetric', 'long-long':'symmetric',
+#             'normal-long':'asymmetric', 'normal-short':'asymmetric', 'short-long':'asymmetric',
+#             'short-normal':'asymmetric'}
 
-majorlin = load_major_lin(majorLinFile, 'inv')
+# majorlin = load_major_lin(majorLinFile, 'inv')
 # get_structure_out(structureFile, categories, majorlin, structTable1, structfig1)
 
-pref2names = load_taxa(prefFile)
+# pref2names = load_taxa(prefFile)
 # add_time_dataframe(structTable1, panterTimeFile, pref2names)
-plot_subplots_line_structure(structTable1, pref2names, structfig2)
+# plot_subplots_line_structure(structTable1, pref2names, structfig2)
 
 
 
@@ -921,7 +971,7 @@ plot_subplots_line_structure(structTable1, pref2names, structfig2)
 #############################################
 #############################################
 
-#### All PCC
+# ### All PCC
 # table = {'plant':[[],[]], 'animal':[[],[]]}
 # table['plant'] = get_data_h5(pccFilePlant, table['plant'],'pcc')
 # table['animal'] =get_data_h5(pccFileAnimal, table['animal'], 'pcc')
@@ -950,7 +1000,7 @@ plot_subplots_line_structure(structTable1, pref2names, structfig2)
 # plot_subplots_violinplot(table, 6, 6, species, names, outfig5)
 
 
-#### PCC nodes internal terminal
+# ### PCC nodes internal terminal
 # table = {}
 # table = nodes_pcc_analisis(pccFilePlant, table, 'plant', 'pcc')
 # table = nodes_pcc_analisis(pccFileAnimal, table, 'animal', 'pcc')
@@ -961,12 +1011,12 @@ plot_subplots_line_structure(structTable1, pref2names, structfig2)
 # table = nodes_pcc_analisis(pccFileAnimal, table, 'animal', 'tau')
 # plot_subplots_violinplot(table, 1, 4, samples, samples, outfig6)
 
-#### outgroup PCC
+# ### outgroup PCC
 # pref2names = load_taxa(prefFile)
-##Plants
+# #Plants
 # load_data_corr_out(outFilePlant, outtab1, 'Plants')
 # add_time_dataframe(outtab1, plantTreetime, pref2names) ### change the temp file
-##Animals
+# #Animals
 # load_data_corr_out(outFileAnimal, outtab2, 'Animals')
 # add_time_dataframe(outtab2, animalTreetime, pref2names)
 # plot_subplots_line_pcc(pathTables+'outgroup_pcc_analysis_plant_animal.tsv', pref2names, outfig7)
