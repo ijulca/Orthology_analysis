@@ -64,8 +64,8 @@ def mnemonic2fasta(inFile, outpath):
         name = gen.sciname
         taxa = gen.uniprot_species_code
         if taxa in names:
-            pepfile = open(taxa+'.fa','w')
-            cdsfile = open(taxa+'.cds.fa','w')
+            pepfile = open(outpath+taxa+'.fa','w')
+            cdsfile = open(outpath+taxa+'.cds.fa','w')
             main_isos = [ProteinEntry(db, e) for e in db.main_isoforms(taxa)]
             print(taxa +'\t'+str(taxid)+'\t'+name+'\t'+str(len(main_isos)))
             for iso in main_isos:
