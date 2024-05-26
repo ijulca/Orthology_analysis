@@ -73,8 +73,8 @@ def mnemonic2fasta(inFile, outpath):
                 cds = iso.cdna
                 identifier = iso.omaid #iso.canonicalid
                 #description = "" #iso.description
-                GM.print(identifier, ''.join(seq), pepfile)
-                GM.print(identifier, ''.join(cds), cdsfile)
+                GM.print_sequence(identifier, ''.join(seq), pepfile)
+                GM.print_sequence(identifier, ''.join(cds), cdsfile)
             pepfile.close()
             cdsfile.close()
     
