@@ -20,7 +20,7 @@ parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="orthog
 parser.add_argument("-p", "--pepFile", dest="pepFile", required=True, help="db of the proteins")
 parser.add_argument("-c", "--cdsFile", dest="cdsFile", default='', help="db of the cds (optional)")
 parser.add_argument("-m", "--minsize", dest="minsize", default='2', help="minimum size to be included. Default=2")
-parser.add_argument("-s", "--maxsize", dest="maxsize", default='100', help="minimum size to be included. Default=100")
+parser.add_argument("-s", "--maxsize", dest="maxsize", default='100', help="maximum size to be included. Default=100")
 parser.add_argument("-o", "--path", dest="path", default='./Data/', help="path where to create the folders")
 args = parser.parse_args()
 

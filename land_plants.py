@@ -132,40 +132,70 @@ def plot_hog_number(inFile, outfig):
     plt.savefig(outfig+'_scatter.svg', bbox_inches='tight')
     plt.show()
     print(df.columns.values)
+    
+def loadTaxa(inFile):
+    species = {}
+    for line in open(inFile):
+        line = line.strip()
+        data = line.split('\t')
+        species[data[0]] = data[1]
+    return species
+    
+def add_name_nodes(t):
+    i = 0
+    for node in t.traverse():
+        if not node.is_leaf():
+            i+=1 
+            node.name = 'NODE_'+str(i)
+    return t
+
+def load_tree(spFile):
+    t = ete3.Tree(spFile)
+    t = add_name_nodes(t)
+    return t
+    
+def my_layout2(node): 
+    if not node.is_leaf(): 
+        F = ete3.TextFace(node.name.replace('NODE_',''), tight_text=True) 
+        ete3.add_face_to_node(F, node, column=0, position="branch-bottom")
+        #E =  ete3.TextFace(node.PProt, tight_text=True)
+        #ete3.add_face_to_node(E, node, column=0, position="branch-top")
+
+def change_leafNames(t,names):
+    for leaf in t:
+        if leaf.name in names:
+            name = names[leaf.name]
+        else:
+            name = leaf.name
+        leaf.name = name
+    return t
+
+def render_treeFig(t, names, outfiname):
+    nstyle = ete3.NodeStyle()
+    nstyle["size"] = 0 ## remove the nodes circles
+    for n in t.traverse():
+        n.set_style(nstyle)
+    ts = ete3.TreeStyle()
+    ts.layout_fn = my_layout2
+    t = change_leafNames(t,names)
+    t.show(tree_style=ts)
+    t.render(outfiname, w=400, tree_style=ts)
 
 #####################################
 ######################################
 ########## FastOMA ###################
 ######################################
 ######################################
-path = '/home/ijulcach/projects/Land_Plants/Fastoma_plants/oma_plants_fastoma/'
-rhogFile = path +'RootHOGs.tsv'
-protpath = '/home/ijulcach/projects/Land_Plants/Fastoma_plants/oma_plants/proteome/'
+path = '/home/ijulcach/projects/Land_Plants/Orthology_analysis/'
 
-#### outfiles
-hogsFile = path+'RootHOGs.line.tsv'
-omahogfile = path +'oma_root_split.tsv'
-species_stat = path +'species_stat.tsv'
+speciesTreeFile = path +'Fastoma_plants/oma_plants/species_tree.nwk'
+names2speciesFile = path +'taxa2name.txt'
 
-species_statFig = path+'plots/'+'species_stat.svg'
-outhogfig1 = path+'plots/'+'hogs_size'
-outhogfig2 = path+'plots/'+'oma_hog_split.svg'
+treeFig = path+ 'general_plots/species_tree_Fig.svg'
 
-
-####
-# table, oma = load_hogs(rhogFile)
-# create_new_format(table, oma, hogsFile, omahogfile)
-# general_stat(protpath, table, species_stat)
-# plot_stat_species(species_stat, species_statFig)
-# plot_hog_number(hogsFile, outhogfig1)
-
-df = pd.read_csv(omahogfile, sep='\t')
-df = df[df['tag']=='SPLIT']
-df['n_rhog'] = df['n_rhog'].apply(lambda x:(x if x<20 else 20))
-print(df.columns.values)
-ax = sns.histplot(data=df, x='n_rhog', color='red')#, bin=10)
-plt.savefig(outhogfig2, bbox_inches='tight')
-plt.show()
+names2species = loadTaxa(names2speciesFile)
+t = load_tree(speciesTreeFile)
+render_treeFig(t, names2species, treeFig)
 
 
 

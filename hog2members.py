@@ -20,7 +20,7 @@ from Bio.SeqRecord import SeqRecord
 
 ### main
 parser = argparse.ArgumentParser(description="download fasta file of hogs (root hogs)")
-parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
+parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="hog name, starting with D")
 args = parser.parse_args()
 
 inFile = args.inFile
