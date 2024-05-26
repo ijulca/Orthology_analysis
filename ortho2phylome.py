@@ -22,6 +22,7 @@ parser.add_argument("-c", "--cdsFile", dest="cdsFile", default='', help="db of t
 parser.add_argument("-m", "--minsize", dest="minsize", default='2', help="minimum size to be included. Default=2")
 parser.add_argument("-s", "--maxsize", dest="maxsize", default='100', help="maximum size to be included. Default=100")
 parser.add_argument("-o", "--path", dest="path", default='./Data/', help="path where to create the folders")
+parser.add_argument("-t", "--tag", dest="tag", default='orthofinder', help="input file: orthofinder, fastoma. Default=orthofinder")
 args = parser.parse_args()
 
 orthoFile = args.inFile
@@ -30,8 +31,15 @@ cdsFile = args.cdsFile
 minsize = int(args.minsize)
 maxsize = int(args.maxsize)
 outpath = args.path+'/'
+tag = args.tag
 
-ortho2pep = OM.loadOrthofinder(orthoFile)
+if tag == 'orthofinder':
+    print('Loading orthofinder input...')
+    ortho2pep = OM.loadOrthofinder(orthoFile)
+elif tag == 'fastoma':
+    print('Loading line FastOMA input...')
+    ortho2pep = OM.loadFastHOGs(orthoFile)
+
 ortho2pep = OM.flt_orthogroups(ortho2pep, minsize, maxsize)
 pepDB = GM.load_sequences(pepFile)
 if cdsFile != '':
