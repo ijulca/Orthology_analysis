@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jun 26 13:00:39 2020
+
+@author: Yannis Nevers - Irene Julca
+"""
+
 import os
 import ncbi.datasets
 import pandas as pd 
