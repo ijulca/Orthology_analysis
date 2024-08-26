@@ -96,6 +96,7 @@ def mnemonic2fasta2splice(inFile, outpath):
     for gen in genomes:
         taxa = gen.uniprot_species_code
         if taxa in names:
+            print(taxa, '...')
             pepfile = open(outpath+taxa+'.fa','w')
             splicenameFile = outpath+taxa+'.splice'
             creat_spliceFile(taxa, splicenameFile)
