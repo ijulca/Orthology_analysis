@@ -83,7 +83,7 @@ def creat_spliceFile(taxa, outname):
     main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]
     main_iso = {x.omaid:[e.omaid for e in x.alternative_isoforms] for x in main_iso}
     spfile = open(outname,'w')
-    for e,g in main_iso:
+    for e,g in main_iso.items():
         isos = set([e]+g)
         print(';'.join(isos),file=spfile)
     spfile.close()
