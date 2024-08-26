@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+## Yanis Nevers
 ## Silvia Prieto
 ## Irene Julca - 23.08.24
 
@@ -63,78 +64,31 @@ def create_splicefile_NCBI(file, formato):
 
 ########################
 #### Ensembl format ####
-########################
+######################## modify by Irene
 
-def create_splicefile_OMA(file, formato):
-    '''
-    Create splicefile from multifasta file, specific for Ensembl fastas with pipes separated header ids (OMA).
-    '''
-    #Make array with gene IDs
-    geneids = []
-    for seq_record in SeqIO.parse(file, formato):
-        string_to_split = seq_record.description
-        split = string_to_split.split(' | ') [3]
-        split = split.split(' | ')[0]
-        geneids.append(split)
+def extract_splice_data_ensembl(fasta_file, tag):
+    all_splice = {}
+    with open(fasta_file, 'r') as handle, open(tag+'.fa', 'w') as outfile: 
+        for seq_record in SeqIO.parse(handle, "fasta"):
+            new_name = tag + seq_record.id 
+            string_to_split = seq_record.description
+            split = string_to_split.split('gene:') [1]
+            gene_id = split.split(' ')[0]
+            all_splice[gene_id] = all_splice.get(gene_id, [])+[new_name]
+            seq_record.id = seq_record.description = new_name
+            SeqIO.write(seq_record, outfile, "fasta")   
+    return all_splice
 
-
-    # Make dictionary with gene ids from previous array as keys. Iterate through the sequences in fasta and add
-    # individual unique record ids as values to each gene id's key.
-    splicedic = {}
-    counter = -1
-
-    for index, record in enumerate(SeqIO.parse(file, formato)):
-        counter+= 1
-        key = geneids[counter]
-        splicedic.setdefault(key, [])
-        splicedic[key].append(record.id)
-
-    
-    temp = file.split('.fa')[0] +'.temp'
-    with open(temp, 'w') as outfile:
-        for key in splicedic:
-        
-            for i in splicedic[key]:
-                print(i, end =";", file=outfile)
-            print('\n', file = outfile)
+def write_splice_file(splice_data, splice_file):
+    with open(splice_file,'w') as handle_output:
+        for val in splice_data.values():
+            handle_output.write(";".join(val)+'\n')
             
-    splicefile = temp.split('.temp')[0] + '.splice'
-    with open(temp,'r') as infile:
-        lines = infile.readlines()
-    
-        with open(splicefile, 'w') as outfile:
-            for l in lines:
-                line = re.sub(";$","", l)
-                if len(line.strip('\n'))>1 and (len(re.findall(';', line)))>0:
-                    outfile.write(line)
-                    
-    return 'Done. Check your folder'
+def prepare_data_ensembl(fasta_file, tag):
+    print(fasta_file)
+    splice_value = extract_splice_data_ensembl(fasta_file, tag)
+    write_splice_file(splice_value, tag+'.splice')
 
-
-def create_splicefile_Ensembl(file, formato):
-    '''
-    Require num and biopython. 
-    Create splicefile from multifasta file, specific for Ensembl fastas with gene:id and no pipes.
-    formato is fasta (should be)
-    '''
-
-    splicedic={}
-
-    for seq_record in SeqIO.parse(file, formato):
-        string_to_split = seq_record.description
-        gid = string_to_split.split('gene:')[1]
-        gid = gid.split(' transcript')[0]
-        splicedic.setdefault(gid,[])
-        splicedic[gid].append(seq_record.id)
-
-    
-    temp = file.split('.fa')[0] +'.splice'
-    with open(temp, 'w') as outfile:
-        for key in splicedic:
-            print(';'.join(splicedic[key]), file=outfile)
-            
-                    
-    return 'Done. Check your folder'
 
 #########################
 #### GFF information ####
@@ -253,24 +207,27 @@ def create_splicefile_unspecific(file, formato):
 ##########
 parser = argparse.ArgumentParser(description="Create the splice files for OMA")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="fasta file")
-parser.add_argument("-t", "--tag", dest="tag", default='ensembl', help="format file, default=ensembl, options=ncbi, ensembl, gff, augustus, other")
 parser.add_argument("-g", "--gffFile", dest="gffFile", default='no', help="gff File, when using format gff")
+parser.add_argument("-f", "--format", dest="format", default='ensembl', help="format file, default=ensembl, options=ncbi, ensembl, gff, augustus, other")
+parser.add_argument("-t", "--tag", dest="tag", default='', help="tag or species name to be added to the genename")
 args = parser.parse_args()
 
 inFile = args.inFile
-tag = args.tag
 gffFile = args.gffFile
+formato = args.format
+tag = args.tag
 
-if tag == 'ncbi':
+if formato == 'ncbi':
     ## For this method, the .fa file needs to have a GeneId (GeneID=)
     print('Parsing NCBI format...')
     create_splicefile_NCBI(inFile, "fasta")
-elif tag == 'gff':
+elif formato == 'gff':
     print('Parsing with gff File...')
     create_splicefile_gff(inFile, gffFile)
-elif tag == 'ensembl':
-    create_splicefile_Ensembl(inFile, "fasta")
-elif tag == 'augustus':
+elif formato == 'ensembl':
+    print('Parsing ensembl format...')
+    prepare_data_ensembl(inFile, tag)
+elif formato == 'augustus':
     create_splicefile_Augustus(inFile, "fasta")
 else:
     create_splicefile_unspecific(inFile, 'fasta')

@@ -13,7 +13,7 @@ import genome_modules as GM
 import general_modules as gmo
 import pyoma.browser.db
 from pyoma.browser.models import ProteinEntry
-db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2023/data/OmaServer.h5')
+db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2024/data/OmaServer.h5')
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -78,12 +78,42 @@ def mnemonic2fasta(inFile, outpath):
             pepfile.close()
             cdsfile.close()
     
+
+def creat_spliceFile(taxa, outname):
+    main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]
+    main_iso = {x.omaid:[e.omaid for e in x.alternative_isoforms] for x in main_iso}
+    spfile = open(outname,'w')
+    for e,g in main_iso:
+        isos = set([e]+g)
+        print(';'.join(isos),file=spfile)
+    spfile.close()
+
+
+def mnemonic2fasta2splice(inFile, outpath):
+    gmo.create_folder(outpath)
+    genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
+    names = gmo.load_list(inFile)
+    for gen in genomes:
+        taxa = gen.uniprot_species_code
+        if taxa in names:
+            pepfile = open(outpath+taxa+'.fa','w')
+            splicenameFile = outpath+taxa+'.splice'
+            creat_spliceFile(taxa, splicenameFile)
+            genes = [ProteinEntry(db,e) for e in db.all_proteins_of_genome(taxa)]
+            for g in genes:
+                seq = g.sequence
+                identifier = g.omaid #iso.canonicalid
+                GM.print_sequence(identifier, ''.join(seq), pepfile)
+            pepfile.close()
+
     
+
+
 ### main
 parser = argparse.ArgumentParser(description="download fasta file of hogs (root hogs)")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
 parser.add_argument("-p", "--outpath", dest="outpath", required=True, help="folder where to create the files")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms")
 args = parser.parse_args()
 
 inFile = args.inFile
@@ -95,6 +125,9 @@ if args.tag == 'h':
 elif args.tag == 'p':
     print('Downloading proteomes...')
     mnemonic2fasta(inFile, outpath)
+elif args.tag == 's':
+    print('Downloading proteomes and splice files...')
+    mnemonic2fasta2splice(inFile, outpath)
 
 
 
