@@ -66,6 +66,11 @@ def create_splicefile_NCBI(file, formato):
 #### Ensembl format ####
 ######################## modify by Irene
 
+def write_splice_file(splice_data, splice_file):
+    with open(splice_file,'w') as handle_output:
+        for val in splice_data.values():
+            handle_output.write(";".join(val)+'\n')
+            
 def extract_splice_data_ensembl(fasta_file, tag):
     all_splice = {}
     with open(fasta_file, 'r') as handle, open(tag+'.fa', 'w') as outfile: 
@@ -78,16 +83,34 @@ def extract_splice_data_ensembl(fasta_file, tag):
             seq_record.id = seq_record.description = new_name
             SeqIO.write(seq_record, outfile, "fasta")   
     return all_splice
-
-def write_splice_file(splice_data, splice_file):
-    with open(splice_file,'w') as handle_output:
-        for val in splice_data.values():
-            handle_output.write(";".join(val)+'\n')
-            
+           
 def prepare_data_ensembl(fasta_file, tag):
     print(fasta_file)
     splice_value = extract_splice_data_ensembl(fasta_file, tag)
     write_splice_file(splice_value, tag+'.splice')
+
+##########################
+#### Phytozome format ####
+########################## modify by Irene
+
+def extract_splice_data_phytozome(fasta_file, tag):
+    all_splice = {}
+    with open(fasta_file, 'r') as handle, open(tag+'.fa', 'w') as outfile: 
+        for seq_record in SeqIO.parse(handle, "fasta"):
+            new_name = tag + seq_record.id 
+            string_to_split = seq_record.description
+            split = string_to_split.split('locus=')[1]
+            gene_id = split.split(' ')[0]
+            all_splice[gene_id] = all_splice.get(gene_id, [])+[new_name]
+            seq_record.id = seq_record.description = new_name
+            SeqIO.write(seq_record, outfile, "fasta")   
+    return all_splice
+
+def prepare_data_phytozome(fasta_file, tag):
+    print(fasta_file)
+    splice_value = extract_splice_data_phytozome(fasta_file, tag)
+    write_splice_file(splice_value, tag+'.splice')
+
 
 
 #########################
@@ -144,17 +167,6 @@ def create_splicefile_gff(file, gff):
 #### Augustus with alternative transcripts ####
 ###############################################
 def create_splicefile_Augustus(file, formato):
-    '''
-    Require num and biopython. 
-    Create splicefile from multifasta file, specific for Augustus fastas with gene= and sequence
-    ids of the form ID.t1/ ID.t2/ ID.t3...
-    Formato should be fasta
-    '''
-
-    from Bio import SeqIO
-    import numpy as np
-    import re
-
     splicedic={}
 
     for seq_record in SeqIO.parse(file, 'fasta'):
@@ -171,35 +183,22 @@ def create_splicefile_Augustus(file, formato):
     return 'Done. Check your folder'
 
 
+###################
+#### No format ####
+###################
 
-
-def create_splicefile_unspecific(file, formato):
-    '''
-    Require num and biopython. 
-    Create splicefile from multifasta file, for fastas with isoform ids 
-    of the form geneid.1/ geneid.2/ geneid.3
-    Formato should be fasta
-    '''
-
-    from Bio import SeqIO
-    import numpy as np
-    import re
-
-    splicedic={}
-
-    for seq_record in SeqIO.parse(file, 'fasta'):
-        string_to_split = seq_record.id
-        gene = string_to_split.split('.')[0]
-        splicedic.setdefault(gene,[])
-        splicedic[gene].append(seq_record.id)
-        
-    temp = file.split('.fa')[0] +'.splice'
-    with open(temp, 'w') as outfile:
-        for key in splicedic:
-            print(';'.join(splicedic[key]), file=outfile)
-            
-    return 'Done. Check your folder'
-
+def create_splicefile_unspecific(file, tag):
+    all_splice = {}
+    with open(file, 'r') as handle, open(tag+'.fa', 'w') as outfile: 
+        for seq_record in SeqIO.parse(handle, "fasta"):
+            new_name = tag + seq_record.id 
+            gene_id = new_name
+            all_splice[gene_id] = all_splice.get(gene_id, [])+[new_name]
+            seq_record.id = seq_record.description = new_name
+            SeqIO.write(seq_record, outfile, "fasta")
+    with open(tag+'.splice','w') as handle_output:
+        for val in all_splice.values():
+            handle_output.write(";".join(val)+'\n')
 
 
 ##########
@@ -208,7 +207,7 @@ def create_splicefile_unspecific(file, formato):
 parser = argparse.ArgumentParser(description="Create the splice files for OMA")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="fasta file")
 parser.add_argument("-g", "--gffFile", dest="gffFile", default='no', help="gff File, when using format gff")
-parser.add_argument("-f", "--format", dest="format", default='ensembl', help="format file, default=ensembl, options=ncbi, ensembl, gff, augustus, other")
+parser.add_argument("-f", "--format", dest="format", default='ensembl', help="format file, default=ensembl, options = ncbi, ensembl, phyto, gff, augustus, other")
 parser.add_argument("-t", "--tag", dest="tag", default='', help="tag or species name to be added to the genename")
 args = parser.parse_args()
 
@@ -224,10 +223,14 @@ if formato == 'ncbi':
 elif formato == 'gff':
     print('Parsing with gff File...')
     create_splicefile_gff(inFile, gffFile)
-elif formato == 'ensembl':
+elif formato == 'ensembl': ## Tested
     print('Parsing ensembl format...')
     prepare_data_ensembl(inFile, tag)
+elif formato =='phyto': ## Tested
+    print('Parsing phytozome format...')
+    prepare_data_phytozome(inFile, tag)
 elif formato == 'augustus':
     create_splicefile_Augustus(inFile, "fasta")
 else:
-    create_splicefile_unspecific(inFile, 'fasta')
+    print('Parsing no format ...') ## when you have just the protein names == genes
+    create_splicefile_unspecific(inFile, tag)
