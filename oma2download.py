@@ -107,14 +107,40 @@ def mnemonic2fasta2splice(inFile, outpath):
                 GM.print_sequence(identifier, ''.join(seq), pepfile)
             pepfile.close()
 
-    
 
+def get_chr_entries(g):
+    genes = db.main_isoforms(g.uniprot_species_code)
+    chr_genes = [ProteinEntry(db, z) for z in genes]
+    return chr_genes
+
+def write_gff3(genes, genome, gff):
+    with open(gff, 'wt') as gffh:
+        for g in genes:
+            source_id = [x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
+            source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
+            strand = "+" if g.strand > 0 else "-"
+            gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
+            for ex in g.exons.as_list_of_dict():
+                gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
+            
+    
+def mnemonic2gff(inFile,outpath):
+    genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
+    names = gmo.load_list(inFile)
+    for gen in genomes:
+        taxa = gen.uniprot_species_code
+        if taxa in names:
+            print(taxa, '...')
+            chr_genes = get_chr_entries(gen)
+            write_gff3(chr_genes, gen, f"{gen.uniprot_species_code}.gff")
+
+ 
 
 ### main
 parser = argparse.ArgumentParser(description="download fasta file of hogs (root hogs)")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
 parser.add_argument("-p", "--outpath", dest="outpath", required=True, help="folder where to create the files")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms, g: gff")
 args = parser.parse_args()
 
 inFile = args.inFile
@@ -129,6 +155,8 @@ elif args.tag == 'p':
 elif args.tag == 's':
     print('Downloading proteomes and splice files...')
     mnemonic2fasta2splice(inFile, outpath)
-
+elif args.tag == 'g':
+    print('Downloading gff3...')
+    mnemonic2gff(inFile, outpath)
 
 
