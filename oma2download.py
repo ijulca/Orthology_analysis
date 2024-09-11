@@ -116,7 +116,7 @@ def get_chr_entries(g):
 def write_gff3(genes, genome, gff):
     with open(gff, 'wt') as gffh:
         for g in genes:
-            source_id = [x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
+            source_id = g.omaid #[x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
             source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
             strand = "+" if g.strand > 0 else "-"
             gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
@@ -126,10 +126,10 @@ def write_gff3(genes, genome, gff):
     
 def mnemonic2gff(inFile,outpath):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
-    names = gmo.load_list(inFile)
+    names = inFile
     for gen in genomes:
         taxa = gen.uniprot_species_code
-        if taxa in names:
+        if taxa == names:
             print(taxa, '...')
             chr_genes = get_chr_entries(gen)
             write_gff3(chr_genes, gen, f"{gen.uniprot_species_code}.gff")
@@ -155,7 +155,7 @@ elif args.tag == 'p':
 elif args.tag == 's':
     print('Downloading proteomes and splice files...')
     mnemonic2fasta2splice(inFile, outpath)
-elif args.tag == 'g':
+elif args.tag == 'g': ## use directly the infile as mnemonic, so you can parallel
     print('Downloading gff3...')
     mnemonic2gff(inFile, outpath)
 
