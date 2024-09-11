@@ -139,7 +139,7 @@ def mnemonic2gff(inFile,outpath):
 ### main
 parser = argparse.ArgumentParser(description="download fasta file of hogs (root hogs)")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
-parser.add_argument("-p", "--outpath", dest="outpath", required=True, help="folder where to create the files")
+parser.add_argument("-p", "--outpath", dest="outpath", default='no', help="folder where to create the files")
 parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms, g: gff")
 args = parser.parse_args()
 
