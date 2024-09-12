@@ -131,7 +131,8 @@ def mnemonic2gff(inFile,outpath):
         taxa = gen.uniprot_species_code
         if taxa == names:
             print(taxa, '...')
-            chr_genes = get_chr_entries(gen)
+            # chr_genes = get_chr_entries(gen) ## only main iso
+            chr_genes = [ProteinEntry(db,e) for e in db.all_proteins_of_genome(taxa)]
             write_gff3(chr_genes, gen, f"{gen.uniprot_species_code}.gff")
 
  

@@ -146,6 +146,32 @@ def create_splicefile_unspecific(file, tag):
             SeqIO.write(seq_record, outfile, "fasta")
     write_splice_file(all_splice, tag+'.splice')
 
+################################################
+#### Creating specific GFF file for EdgeHOG ####
+################################################
+
+def gff_parsing(inFile, tag):
+    with open(tag+'.gff','w') as gfh:
+        for line in open(inFile):
+            line = line.strip()
+            data = line.split('\t')
+            if line.startswith('#') or not line:
+                pass
+            else:
+                if data[2] == 'gene':
+                    gfh.write(f"{line}\n")
+                elif data[2] == 'CDS':
+                    info = data[8].split(';')
+                    name = info[0].split('=')[1]
+                    if '.CDS' in name:
+                        name = name.split('.CDS')[0]
+                    if 'cds-' in name:
+                        name = name.split('cds-')[1]
+                    new_id = tag+name
+                    data[-1] = f"ID={new_id};"+';'.join(info[1:])
+                    line = '\t'.join(data)
+                    gfh.write(f"{line}\n")
+
 
 ##########
 ## main ##
@@ -155,25 +181,33 @@ parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="fasta 
 parser.add_argument("-g", "--gffFile", dest="gffFile", default='no', help="gff File, when using format gff")
 parser.add_argument("-f", "--format", dest="format", default='ensembl', help="format file, default=ensembl, options = ncbi, ensembl, phyto, augustus, other")
 parser.add_argument("-t", "--tag", dest="tag", default='', help="tag or species name to be added to the genename")
+parser.add_argument("-gff", "--gff", dest="gff", action='store_true', help="activate when you want to create a gff for edgehog and use -g option")
 args = parser.parse_args()
 
 inFile = args.inFile
 gffFile = args.gffFile
 formato = args.format
-tag = args.tag
+taxa = args.tag
+gfftag = args.gff
 
 if formato == 'ncbi':
     ## For this method, the .fa file needs to have a GeneId (GeneID=)
     print('Parsing NCBI format...')
-    create_splicefile_ncbi(inFile, gffFile, tag)
+    create_splicefile_ncbi(inFile, gffFile, taxa)
+    if gfftag:
+        print('Creating gff file...')
+        gff_parsing(gffFile, taxa)
 elif formato == 'ensembl': ## Tested
     print('Parsing ensembl format...')
-    create_splicefile_ensembl(inFile, tag)
+    create_splicefile_ensembl(inFile, taxa)
 elif formato =='phyto': ## Tested
     print('Parsing phytozome format...')
-    create_splicefile_phytozome(inFile, tag)
+    create_splicefile_phytozome(inFile, taxa)
 elif formato == 'augustus':
     create_splicefile_Augustus(inFile, "fasta")
 else:
     print('Parsing no format ...') ## when you have just the protein names == genes
-    create_splicefile_unspecific(inFile, tag)
+    create_splicefile_unspecific(inFile, taxa)
+    if gfftag:
+        print('Creating gff file...')
+        gff_parsing(gffFile, taxa)
