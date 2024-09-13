@@ -150,8 +150,6 @@ parser = argparse.ArgumentParser(description="download fasta file of hogs (root 
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
 parser.add_argument("-p", "--outpath", dest="outpath", default='no', help="folder where to create the files")
 parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms, g: gff")
-parser.add_argument("-xml", "--xml", dest="xml", default='no', help="orthoxml to get the main isoforms. Add for gff option")
-parser.add_argument("-tree", "--tree", dest="tree", default='no', help="orthoxml to get the main isoforms. Add for gff option")
 args = parser.parse_args()
 
 inFile = args.inFile
@@ -170,6 +168,6 @@ elif args.tag == 's':
     mnemonic2fasta2splice(inFile, outpath)
 elif args.tag == 'g': ## use directly the infile as mnemonic, so you can parallel
     print('Downloading gff3...')
-    mnemonic2gff(inFile, orthoxmlFile,treeFile)
+    mnemonic2gff(inFile)
 
 
