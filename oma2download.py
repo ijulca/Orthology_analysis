@@ -17,6 +17,7 @@ db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.J
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+import pyham
 
 
 def hog2fasta(inFile, outpath):
@@ -113,19 +114,32 @@ def get_chr_entries(g):
     chr_genes = [ProteinEntry(db, z) for z in genes]
     return chr_genes
 
-def write_gff3(genes, genome, gff):
+def write_gff3(genes, genome, mainiso, gff):
     with open(gff, 'wt') as gffh:
         for g in genes:
             source_id = g.omaid #[x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
-            source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
-            strand = "+" if g.strand > 0 else "-"
-            gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
-            for ex in g.exons.as_list_of_dict():
-                gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
-            
+            if source_id in mainiso:
+                source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
+                strand = "+" if g.strand > 0 else "-"
+                gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
+                for ex in g.exons.as_list_of_dict():
+                    gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
+
+def get_mainIso(orthoxmlFile, treeFile):
+    ham_analysis = pyham.Ham(treeFile, orthoxmlFile, use_internal_name=True)
+    species = {x.name:set() for x in list(ham_analysis.get_list_extant_genomes())}
+    print("List of species:", len(species))
+    for hog_id, hog in ham_analysis.top_level_hogs.items():
+        info = hog.get_all_descendant_genes_clustered_by_species()
+        for sp, genes in info.items():
+            prot = [x.prot_id for x in genes]
+            for p in prot:
+                species[str(sp)].add(p)
+    return species
     
-def mnemonic2gff(inFile,outpath):
+def mnemonic2gff(inFile, orthoxmlFile,treeFile):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
+    species2mainiso = get_mainIso(orthoxmlFile, treeFile)
     names = inFile
     for gen in genomes:
         taxa = gen.uniprot_species_code
@@ -133,7 +147,7 @@ def mnemonic2gff(inFile,outpath):
             print(taxa, '...')
             # chr_genes = get_chr_entries(gen) ## only main iso
             chr_genes = [ProteinEntry(db,e) for e in db.all_proteins_of_genome(taxa)]
-            write_gff3(chr_genes, gen, f"{gen.uniprot_species_code}.gff")
+            write_gff3(chr_genes, gen,species2mainiso[taxa], f"{gen.uniprot_species_code}.gff")
 
  
 
@@ -142,10 +156,14 @@ parser = argparse.ArgumentParser(description="download fasta file of hogs (root 
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
 parser.add_argument("-p", "--outpath", dest="outpath", default='no', help="folder where to create the files")
 parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms, g: gff")
+parser.add_argument("-xml", "--xml", dest="xml", default='no', help="orthoxml to get the main isoforms. Add for gff option")
+parser.add_argument("-tree", "--tree", dest="tree", default='no', help="orthoxml to get the main isoforms. Add for gff option")
 args = parser.parse_args()
 
 inFile = args.inFile
 outpath = args.outpath+'/'
+orthoxmlFile = args.iso
+treeFile = args.tree
 
 if args.tag == 'h':
     print('Downloading HOGS...')
@@ -158,6 +176,6 @@ elif args.tag == 's':
     mnemonic2fasta2splice(inFile, outpath)
 elif args.tag == 'g': ## use directly the infile as mnemonic, so you can parallel
     print('Downloading gff3...')
-    mnemonic2gff(inFile, outpath)
+    mnemonic2gff(inFile, orthoxmlFile,treeFile)
 
 
