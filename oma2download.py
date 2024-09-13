@@ -114,41 +114,35 @@ def get_chr_entries(g):
     chr_genes = [ProteinEntry(db, z) for z in genes]
     return chr_genes
 
-def write_gff3(genes, genome, mainiso, gff):
+def write_gff3(genes, genome, gff):
     with open(gff, 'wt') as gffh:
         for g in genes:
             source_id = g.omaid #[x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
-            if source_id in mainiso:
-                source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
-                strand = "+" if g.strand > 0 else "-"
-                gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
-                for ex in g.exons.as_list_of_dict():
-                    gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
+            source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
+            strand = "+" if g.strand > 0 else "-"
+            gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
+            for ex in g.exons.as_list_of_dict():
+                gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
 
-def get_mainIso(orthoxmlFile, treeFile):
-    ham_analysis = pyham.Ham(treeFile, orthoxmlFile, use_internal_name=True)
-    species = {x.name:set() for x in list(ham_analysis.get_list_extant_genomes())}
-    print("List of species:", len(species))
-    for hog_id, hog in ham_analysis.top_level_hogs.items():
-        info = hog.get_all_descendant_genes_clustered_by_species()
-        for sp, genes in info.items():
-            prot = [x.prot_id for x in genes]
-            for p in prot:
-                species[str(sp)].add(p)
-    return species
     
-def mnemonic2gff(inFile, orthoxmlFile,treeFile):
+def mnemonic2gff(inFile):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
-    species2mainiso = get_mainIso(orthoxmlFile, treeFile)
-    names = inFile
-    for gen in genomes:
-        taxa = gen.uniprot_species_code
-        if taxa == names:
-            print(taxa, '...')
-            # chr_genes = get_chr_entries(gen) ## only main iso
-            chr_genes = [ProteinEntry(db,e) for e in db.all_proteins_of_genome(taxa)]
-            write_gff3(chr_genes, gen,species2mainiso[taxa], f"{gen.uniprot_species_code}.gff")
-
+    for genome in genomes:
+        taxa = genome.uniprot_species_code
+        if taxa == inFile:
+            main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]    
+            with open(taxa+'gff','w') as gffh:
+                for g in main_iso:
+                    source_id = [x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
+                    # source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
+                    isof = [g]+g.alternative_isoforms           
+                    strand = "+" if g.strand > 0 else "-"
+                    gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tgene\t{g.locus_start}\t{g.locus_end}\t\t{strand}\t0\tID={source_id}\n")
+                    for p in isof:
+                        pep_id = p.omaid
+                        strand = "+" if p.strand > 0 else "-"
+                        for ex in p.exons.as_list_of_dict():
+                            gffh.write(f"{p.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{pep_id};Parent={source_id};protein_id={pep_id}\n")
  
 
 ### main

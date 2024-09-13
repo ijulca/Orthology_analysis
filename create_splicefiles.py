@@ -169,6 +169,8 @@ def gff_parsing(inFile, tag):
                         name = name.split('cds-')[1]
                     new_id = tag+name
                     data[-1] = f"ID={new_id};"+';'.join(info[1:])
+                    if 'protein_id=' not in data[-1]:
+                        data[-1]+=f";protein_id={new_id}"
                     line = '\t'.join(data)
                     gfh.write(f"{line}\n")
 
