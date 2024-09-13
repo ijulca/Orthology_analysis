@@ -131,7 +131,7 @@ def mnemonic2gff(inFile):
         taxa = genome.uniprot_species_code
         if taxa == inFile:
             main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]    
-            with open(taxa+'gff','w') as gffh:
+            with open(taxa+'.gff','w') as gffh:
                 for g in main_iso:
                     source_id = [x['xref'] for x in g.xrefs if x['source'] == 'SourceID'][0]
                     # source_ac = [x['xref'] for x in g.xrefs if x['source'] == 'SourceAC'][0]
