@@ -162,7 +162,7 @@ args = parser.parse_args()
 
 inFile = args.inFile
 outpath = args.outpath+'/'
-orthoxmlFile = args.iso
+orthoxmlFile = args.xml
 treeFile = args.tree
 
 if args.tag == 'h':
