@@ -159,7 +159,7 @@ def pep2hogID(inFile):
             for i in ids:
                 try:
                     hog = db.hog_family(i)
-                    hogs.append(hog)
+                    hogs.add(hog)
                 except Exception as e:
                     print(f"An error occurred: {e}")
             if len(hogs) == 0:
