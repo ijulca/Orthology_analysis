@@ -155,9 +155,12 @@ def pep2hogID(inFile):
             print(f"{g}\tNone",file=outfile)
         else:
             ids = [x['EntryNr'] for x in info]
-            hogs = set([db.hog_family(x) for x in ids])
-            for hog in hogs:
-                print(f"{g}\t{hog}", file=outfile)
+            for i in ids:
+                hog = db.hog_family(i)
+                print(hog)
+            # hogs = set([db.hog_family(x) for x in ids])
+            # for hog in hogs:
+            #     print(f"{g}\t{hog}", file=outfile)
     outfile.close()
     
 
