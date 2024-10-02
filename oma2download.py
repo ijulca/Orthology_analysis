@@ -155,7 +155,7 @@ def pep2hogID(inFile):
             print(f"g\tNone",file=outfile)
         else:
             for e in info:
-                print(e[0]['EntryNr'])
+                print(e['EntryNr'])
             # info = [x[0]['EntryNr'] for x in db_search.search_xref(g)]
         # hogs = set([db.hog_family(x) for x in info])
         # for hog in hogs:
