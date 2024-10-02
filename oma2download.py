@@ -150,10 +150,12 @@ def pep2hogID(inFile):
     db_search = db.id_mapper['XRef']
     outfile = open(f"{inFile}.hogs",'w')
     for g in genes:
-        info = [x[1]['EntryNr'] for x in db_search.search_xref(g)]
-        hogs = set([db.hog_family(x) for x in info])
-        for hog in hogs:
-            print(f"{g}\t{hog}", file=outfile)
+        info = db_search.search_xref(g)
+        print(info)
+        # info = [x[1]['EntryNr'] for x in db_search.search_xref(g)]
+        # hogs = set([db.hog_family(x) for x in info])
+        # for hog in hogs:
+        #     print(f"{g}\t{hog}", file=outfile)
     outfile.close()
     
 
