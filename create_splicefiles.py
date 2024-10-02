@@ -63,7 +63,7 @@ def extract_splice_data_ncbi(fasta_file, gff_file, tag):
 def create_splicefile_ncbi(fasta_file, gff_file, tag):
     print(fasta_file)
     splice_value = extract_splice_data_ncbi(fasta_file, gff_file, tag)
-    write_splice_file(splice_value, tag+'.splice')
+    write_splice_file(splice_value, tag+'.gene.splice')
 
 
 ########################
@@ -86,7 +86,7 @@ def extract_splice_data_ensembl(fasta_file, tag):
 def create_splicefile_ensembl(fasta_file, tag):
     print(fasta_file)
     splice_value = extract_splice_data_ensembl(fasta_file, tag)
-    write_splice_file(splice_value, tag+'.splice')
+    write_splice_file(splice_value, tag+'.gene.splice')
 
 ##########################
 #### Phytozome format ####
@@ -108,7 +108,7 @@ def extract_splice_data_phytozome(fasta_file, tag):
 def create_splicefile_phytozome(fasta_file, tag):
     print(fasta_file)
     splice_value = extract_splice_data_phytozome(fasta_file, tag)
-    write_splice_file(splice_value, tag+'.splice')
+    write_splice_file(splice_value, tag+'.gene.splice')
 
 
 ###############################################
@@ -123,7 +123,7 @@ def create_splicefile_Augustus(file, formato):
         splicedic.setdefault(gene,[])
         splicedic[gene].append(seq_record.id)
 
-    temp = file.split('.fa')[0] +'.splice'
+    temp = file.split('.fa')[0] +'.gene.splice'
     with open(temp, 'w') as outfile:
         for key in splicedic:
             print(';'.join(splicedic[key]), file=outfile)
@@ -144,7 +144,7 @@ def create_splicefile_unspecific(file, tag):
             all_splice[gene_id] = all_splice.get(gene_id, [])+[new_name]
             seq_record.id = seq_record.description = new_name
             SeqIO.write(seq_record, outfile, "fasta")
-    write_splice_file(all_splice, tag+'.splice')
+    write_splice_file(all_splice, tag+'.gene.splice')
 
 ################################################
 #### Creating specific GFF file for EdgeHOG ####
@@ -162,15 +162,21 @@ def gff_parsing(inFile, tag):
                     gfh.write(f"{line}\n")
                 elif data[2] == 'CDS':
                     info = data[8].split(';')
-                    name = info[0].split('=')[1]
+                    name = [x for x in info if 'ID=' in x][0]
+                    name = name.split('=')[1]
                     if '.CDS' in name:
                         name = name.split('.CDS')[0]
                     if 'cds-' in name:
                         name = name.split('cds-')[1]
                     new_id = tag+name
-                    data[-1] = f"ID={new_id};"+';'.join(info[1:])
+                    info = [f"ID={new_id}" if 'ID=' in x else x for x in info]
+                    data[8] = ';'.join(info)
                     if 'protein_id=' not in data[-1]:
-                        data[-1]+=f";protein_id={new_id}"
+                        data[8]+=f";protein_id={new_id}"
+                    else:
+                        info = data[8].split(';')
+                        info = [f"protein_id={new_id}" if 'protein_id=' in x else x for x in info]
+                        data[8] = ';'.join(info)
                     line = '\t'.join(data)
                     gfh.write(f"{line}\n")
 
@@ -213,3 +219,34 @@ else:
     if gfftag:
         print('Creating gff file...')
         gff_parsing(gffFile, taxa)
+
+
+
+
+
+
+
+# file = '/home/ijulcach/projects/Legumes_nodules/Data/LOTJB/Lotus_japonicus_annos1-cds0-id_typename-nu1-upa1-add_chr0.gid63162.gff'
+# outfile = open(file+'3','w')
+
+# for line in open(file):
+#     line = line.strip()
+#     data = line.split('\t')
+#     if line.startswith('#') or not line:
+#         pass
+#     else:
+#         if data[0].startswith('LjG') and 'chr' in data[0]:
+#             if data[2] == 'mRNA':
+#                 name = data[8].split('ID=')[1].split(';')[0].split('.mRNA')[0]
+#                 data[8] = data[8]+';product='+name
+#             line = '\t'.join(data)
+#             print(line,file=outfile)
+#                 # if '.' in name:
+#                 #     name = name.split('.')[0]
+#                 # if '_' in name:
+#                 #     name = name.split('_')[0]
+#                 # print(name)
+#             # else:
+#             #     print(line,file=outfile)
+# outfile.close()
+

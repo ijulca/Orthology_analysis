@@ -144,29 +144,49 @@ def mnemonic2gff(inFile):
                         for ex in p.exons.as_list_of_dict():
                             gffh.write(f"{p.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{pep_id};Parent={source_id};protein_id={pep_id}\n")
  
+    
+def pep2hogID(inFile):
+    genes = gmo.load_list(inFile)
+    db_search = db.id_mapper['XRef']
+    outfile = open(f"{inFile}.hogs",'w')
+    for g in genes:
+        info = [x[1]['EntryNr'] for x in db_search(g)]
+        hogs = set([db.hog_family(x) for x in info])
+        for hog in hogs:
+            print(f"{g}\t{hog}", file=outfile)
+    outfile.close()
+    
 
 ### main
-parser = argparse.ArgumentParser(description="download fasta file of hogs (root hogs)")
+parser = argparse.ArgumentParser(description="download files from OMA browser")
 parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
 parser.add_argument("-p", "--outpath", dest="outpath", default='no', help="folder where to create the files")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="what to download, h: hogs fasta, p: proteomes mainiso, s:proteomes and splice forms, g: gff")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="""what to download, 
+                    hog2fasta: hogs fasta, 
+                    pep2main_iso: proteomes main isoforms, 
+                    pep2splice: proteomes and splice forms, 
+                    getgff: get the gff file, 
+                    pep2hog: give a list of protein IDs and get hogs""")
 args = parser.parse_args()
 
 inFile = args.inFile
 outpath = args.outpath+'/'
 
 
-if args.tag == 'h':
+if args.tag == 'hog2fasta':
     print('Downloading HOGS...')
     hog2fasta(inFile, outpath)
-elif args.tag == 'p':
+elif args.tag == 'pep2main_iso':
     print('Downloading proteomes...')
     mnemonic2fasta(inFile, outpath)
-elif args.tag == 's':
+elif args.tag == 'pep2splice':
     print('Downloading proteomes and splice files...')
     mnemonic2fasta2splice(inFile, outpath)
-elif args.tag == 'g': ## use directly the infile as mnemonic, so you can parallel
+elif args.tag == 'getgff': ## use directly the infile as mnemonic, so you can parallel
     print('Downloading gff3...')
     mnemonic2gff(inFile)
+elif args.tag == 'pep2hog':
+    print('Getting hog ids...')
+    pep2hogID(inFile)
 
 
