@@ -52,9 +52,9 @@ def hog2fasta(inFile, outpath):
             with open(f'hog_{hog}.fa', 'wt') as fout:
                 for p in db.member_of_fam(int(hog)): #db.member_of_hog_id(hog): ###use this for full hog name
                     pe = ProteinEntry(db, p)
-                    fout.write(f">{pe.omaid} {pe.canonicalid}\n")
+                    fout.write(f">{pe.omaid})\n") # {pe.canonicalid}\n")
                     fout.write(pe.sequence)
-                    fout.write("\n\n")
+                    fout.write("\n")
 
 
 def mnemonic2fasta(inFile, outpath):
