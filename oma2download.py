@@ -21,7 +21,8 @@ import pyham
 
 
 def hog2fasta(inFile, outpath):
-    gmo.create_folder(outpath)
+    if outpath !='no':
+        gmo.create_folder(outpath)
     hogs = gmo.load_list(inFile)
     print('Number of HOGs:', len(hogs))
     if len(hogs)>1000:
@@ -49,7 +50,7 @@ def hog2fasta(inFile, outpath):
     else:
         for hog in hogs:
             with open(f'hog_{hog}.fa', 'wt') as fout:
-                for p in db.member_of_hog_id(hog):
+                for p in db.db.member_of_fam(int(hog)): #db.member_of_hog_id(hog): ###use this for full hog name
                     pe = ProteinEntry(db, p)
                     fout.write(f">{pe.omaid} {pe.canonicalid}\n")
                     fout.write(pe.sequence)
