@@ -13,7 +13,7 @@ import genome_modules as GM
 import general_modules as gmo
 import pyoma.browser.db
 from pyoma.browser.models import ProteinEntry, HOG
-db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2024/data/OmaServer.h5')
+db = 1#pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2024/data/OmaServer.h5')
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -165,15 +165,15 @@ def pep2hogID(inFile):
     
 
 ### main
-parser = argparse.ArgumentParser(description="download files from OMA browser")
+parser = argparse.ArgumentParser(description="download files from OMA browser", formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-i", "--input", dest="input", required=True, help="hog_id or mnemonic, check tag")
-parser.add_argument("-t", "--tag", dest="tag", formatter_class=argparse.RawDescriptionHelpFormatter, required=True, help="""select from options:\n 
-                    hog2shogs: hog_id to similar hogs with shared orthologs,\n
-                    hog2fasta: hog_id to fasta file,\n
-                    pep2main_iso: mnemonic to proteomes, getting only main isoforms,\n
-                    pep2splice: proteomes and splice forms,\n
-                    getgff: mnemonic to gff file,\n
-                    pep2hog: give a list of protein IDs and get hogs,\n""")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="""select from options:
+                    hog2shogs: hog_id to similar hogs with shared orthologs,
+                    hog2fasta: hog_id to fasta file,
+                    pep2main_iso: mnemonic to proteomes, getting only main isoforms,
+                    pep2splice: proteomes and splice forms,
+                    getgff: mnemonic to gff file,
+                    pep2hog: give a list of protein IDs and get hogs,""")
 args = parser.parse_args()
 
 inData = args.input
