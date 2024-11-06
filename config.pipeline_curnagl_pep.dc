@@ -32,7 +32,7 @@ verbose           parameter	 1
 ## reconstruction - or phylogenetic tree reconstruction - when model selection
 ## is used. Available values are "protein", "prot2codon", "prot2nuc" and "nuc"
 
-residue_datatype    parameter      prot2codon #protein # prot2codon prot2nuc nuc
+residue_datatype    parameter      protein #prot2codon #protein # prot2codon prot2nuc nuc
 
 ## HOMOLOGY SEARCH Step. General parameters, available modes and programs are
 ## defined here
