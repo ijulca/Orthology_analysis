@@ -96,13 +96,13 @@ in_letter           parameter	     U:B
 in_letter           parameter	     O:Z
 
 ## Alignment programs
-muscle              binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/muscle
+muscle              binary         muscle
 muscle_params       parameter      -threads 1 ### old options -maxiters 1 -diags -sv -distance1 kbit20_3
 
-mafft               binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/mafft
+mafft               binary         mafft
 mafft_params        parameter      --auto
 
-kalign              binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/kalign
+kalign              binary         kalign
 kalign_params       parameter      
 
 # clustal_omega        binary
@@ -129,13 +129,13 @@ m_coffee_params     parameter      -n_core 1 -output fasta -quiet #-setenv MAX_N
 ## many of the different ways to trim an given alignment. It is also implements
 ## an special mode for trimming consensus alignment generated after combining
 ## more than one
-trimal              binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/trimal
+trimal              binary         trimal
 trimal_params       parameter	     -phylip -gt 0.5
 trimal_compare      parameter	     -ct 0.1667
 trimal_cds          parameter	     -splitbystopcodon
 
 ## Alignment and Sequences files manipulation
-readal              binary         /work/FAC/FBM/DBC/cdessim2/default/ijulca/miniconda/condaenvs/anaconda/bin/readal
+readal              binary         readal
 
 ### Phylogenetic tree reconstruction program
 #tree                mode           phyml
