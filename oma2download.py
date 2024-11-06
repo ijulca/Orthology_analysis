@@ -167,7 +167,7 @@ def pep2hogID(inFile):
 ### main
 parser = argparse.ArgumentParser(description="download files from OMA browser")
 parser.add_argument("-i", "--input", dest="input", required=True, help="hog_id or mnemonic, check tag")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="""select from options:\n 
+parser.add_argument("-t", "--tag", dest="tag", formatter_class=argparse.RawDescriptionHelpFormatter, required=True, help="""select from options:\n 
                     hog2shogs: hog_id to similar hogs with shared orthologs,\n
                     hog2fasta: hog_id to fasta file,\n
                     pep2main_iso: mnemonic to proteomes, getting only main isoforms,\n
