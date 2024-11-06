@@ -40,9 +40,12 @@ def get_shared_hogs(hog_id, level=None): ### level of interest or None --> rootl
            continue
         all_roothogs[pe.hog_family_nr] += 1
     shared_hogs = sorted([(k,v) for k,v in all_roothogs.items()], key=lambda x: -x[1])
-    with open(f"{hog_id.split(':')[1]}.shared_hogs.txt","w") as fout:
-        for e,v in shared_hogs:
-            print(f"{e}\t{v}",file=fout)
+    if len(shared_hogs) == 0:
+        print(f'No shared hogs found: {hog_id}')
+    else:
+        with open(f"{hog_id.split(':')[1]}.shared_hogs.txt","w") as fout:
+            for e,v in shared_hogs:
+                print(f"{e}\t{v}",file=fout)
  
 ### Get the fasta file of hogs
 def hog2fasta(hog_id):
