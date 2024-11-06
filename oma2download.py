@@ -12,62 +12,58 @@ sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py
 import genome_modules as GM
 import general_modules as gmo
 import pyoma.browser.db
-from pyoma.browser.models import ProteinEntry
+from pyoma.browser.models import ProteinEntry, HOG
 db = pyoma.browser.db.Database('/work/FAC/FBM/DBC/cdessim2/oma/oma-browser/All.Jul2024/data/OmaServer.h5')
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 import pyham
+import collections
 
+### Get similar hogs with shared orthologs
+def get_shared_hogs(hog_id, level=None): ### level of interest or None --> rootlevel for hogid
+    hog = HOG(db, db.get_hog(hog_id, level=level))
+    hog_memb_enrs = [e.entry_nr for e in hog.members]
+    all_pw_orth_enr = set()
+    for enr in hog_memb_enrs:
+       pw = db.get_vpairs(enr)
+       all_pw_orth_enr.update(list(int(row['EntryNr2']) for row in pw))
 
-def hog2fasta(inFile, outpath):
-    if outpath !='no':
-        gmo.create_folder(outpath)
-    hogs = gmo.load_list(inFile)
-    print('Number of HOGs:', len(hogs))
-    if len(hogs)>1000:
-        for i in range(0,len(hogs), 1000):
-            z = i + 1000
-            if z >len(hogs):
-                z = len(hogs)
-            outdir1 = outpath+str(i+1)+'-'+str(z)+'/'
-            gmo.create_folder(outdir1)
-            for j in range(i,z):
-                hog = hogs[j]
-                name = hog.split(':')[1]
-                outdir2 = outdir1+name+'/'
-                if os.path.isdir(outdir2) == False:
-                    gmo.create_folder(outdir2)
-                    outFile = outdir2+name+'.fasta'
-                    with open(outFile, 'wt') as fout:
-                        for p in db.member_of_hog_id(hog):
-                            pe = ProteinEntry(db, p)
-                            fout.write(f">{pe.omaid} {pe.canonicalid}\n")
-                            fout.write(pe.sequence)
-                            fout.write("\n\n")
-                else:
-                    print('Done for..', hog)
-    else:
-        for hog in hogs:
-            with open(f'hog_{hog}.fa', 'wt') as fout:
-                for p in db.member_of_fam(int(hog)): #db.member_of_hog_id(hog): ###use this for full hog name
-                    pe = ProteinEntry(db, p)
-                    fout.write(f">{pe.omaid}\n") # {pe.canonicalid}\n")
-                    fout.write(pe.sequence)
-                    fout.write("\n")
+    all_roothogs = collections.defaultdict(int)
+    for enr in all_pw_orth_enr:
+        if enr in hog_memb_enrs:
+           continue
+        pe = ProteinEntry(db, enr)
+        if pe.hog_family_nr == 0:
+           continue
+        all_roothogs[pe.hog_family_nr] += 1
+    shared_hogs = sorted([(k,v) for k,v in all_roothogs.items()], key=lambda x: -x[1])
+    with open(f"{hog_id}.shared_hogs.txt","w") as fout:
+        for e,v in shared_hogs:
+            print(f"{e}\t{v}",file=fout)
+ 
+### Get the fasta file of hogs
+def hog2fasta(hog_id):
+    if 'HOG:' in hog_id:
+        hog_id = hog_id.split(':')[1]
+    hog_id = int(hog_id)
+    with open(f'{hog_id}.fa', 'wt') as fout:
+        for p in db.member_of_fam(int(hog_id)): #db.member_of_hog_id(hog): ###use this for full hog name
+            pe = ProteinEntry(db, p)
+            fout.write(f">{pe.omaid}\n") # {pe.canonicalid}\n")
+            fout.write(pe.sequence)
+            fout.write("\n")
 
-
-def mnemonic2fasta(inFile, outpath):
-    gmo.create_folder(outpath)
+### Get main isoforms
+def mnemonic2fasta(mnemonic):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
-    names = gmo.load_list(inFile)
     for gen in genomes:
         taxid  = gen.ncbi_taxon_id
         name = gen.sciname
         taxa = gen.uniprot_species_code
-        if taxa in names:
-            pepfile = open(outpath+taxa+'.fa','w')
-            cdsfile = open(outpath+taxa+'.cds.fa','w')
+        if taxa == mnemonic:
+            pepfile = open(f"{taxa}.fa",'w')
+            cdsfile = open(f"{taxa}.cds.fa",'w')
             main_isos = [ProteinEntry(db, e) for e in db.main_isoforms(taxa)]
             print(taxa +'\t'+str(taxid)+'\t'+name+'\t'+str(len(main_isos)))
             for iso in main_isos:
@@ -81,6 +77,7 @@ def mnemonic2fasta(inFile, outpath):
             cdsfile.close()
     
 
+### Get proteomes and splice files
 def creat_spliceFile(taxa, outname):
     main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]
     main_iso = {x.omaid:[e.omaid for e in x.alternative_isoforms] for x in main_iso}
@@ -91,16 +88,13 @@ def creat_spliceFile(taxa, outname):
     spfile.close()
 
 
-def mnemonic2fasta2splice(inFile, outpath):
-    gmo.create_folder(outpath)
+def mnemonic2fasta2splice(mnemonic):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
-    names = gmo.load_list(inFile)
     for gen in genomes:
         taxa = gen.uniprot_species_code
-        if taxa in names:
-            print(taxa, '...')
-            pepfile = open(outpath+taxa+'.fa','w')
-            splicenameFile = outpath+taxa+'.splice'
+        if taxa == mnemonic:
+            pepfile = open(f"{taxa}.fa",'w')
+            splicenameFile = f"{taxa}.splice"
             creat_spliceFile(taxa, splicenameFile)
             genes = [ProteinEntry(db,e) for e in db.all_proteins_of_genome(taxa)]
             for g in genes:
@@ -126,11 +120,11 @@ def write_gff3(genes, genome, gff):
                 gffh.write(f"{g.chromosome}\t{genome.release.split(';')[0]}\tCDS\t{ex['start']}\t{ex['end']}\t\t{strand}\t0\tID=CDS:{source_ac};Parent={source_id};protein_id={source_id}\n")
 
     
-def mnemonic2gff(inFile):
+def mnemonic2gff(mnemonic):
     genomes = [pyoma.browser.models.Genome(db, g) for g in db.db.root.Genome.read()]
     for genome in genomes:
         taxa = genome.uniprot_species_code
-        if taxa == inFile:
+        if taxa == mnemonic:
             main_iso = [ProteinEntry(db,e) for e in db.main_isoforms(taxa)]    
             with open(taxa+'.gff','w') as gffh:
                 for g in main_iso:
@@ -172,34 +166,35 @@ def pep2hogID(inFile):
 
 ### main
 parser = argparse.ArgumentParser(description="download files from OMA browser")
-parser.add_argument("-i", "--inFile", dest="inFile", required=True, help="list of hogs or list of mnemonic")
-parser.add_argument("-p", "--outpath", dest="outpath", default='no', help="folder where to create the files")
-parser.add_argument("-t", "--tag", dest="tag", required=True, help="""what to download, 
-                    hog2fasta: hogs fasta, 
-                    pep2main_iso: proteomes main isoforms, 
-                    pep2splice: proteomes and splice forms, 
-                    getgff: get the gff file, 
-                    pep2hog: give a list of protein IDs and get hogs""")
+parser.add_argument("-i", "--input", dest="input", required=True, help="hog_id or mnemonic, check tag")
+parser.add_argument("-t", "--tag", dest="tag", required=True, help="""select from options:\n 
+                    hog2shogs: hog_id to similar hogs with shared orthologs,\n
+                    hog2fasta: hog_id to fasta file,\n
+                    pep2main_iso: mnemonic to proteomes, getting only main isoforms,\n
+                    pep2splice: proteomes and splice forms,\n
+                    getgff: mnemonic to gff file,\n
+                    pep2hog: give a list of protein IDs and get hogs,\n""")
 args = parser.parse_args()
 
-inFile = args.inFile
-outpath = args.outpath+'/'
-
+inData = args.input
 
 if args.tag == 'hog2fasta':
-    print('Downloading HOGS...')
-    hog2fasta(inFile, outpath)
+    print(f"Downloading fasta file of ...{inData}")
+    hog2fasta(inData)
+elif args.tag =='hog2shogs':
+    print(f"Getting similar hogs...{inData}")
+    get_shared_hogs(inData)
 elif args.tag == 'pep2main_iso':
-    print('Downloading proteomes...')
-    mnemonic2fasta(inFile, outpath)
+    print('Downloading main isoforms...{inData}')
+    mnemonic2fasta(inData)
 elif args.tag == 'pep2splice':
-    print('Downloading proteomes and splice files...')
-    mnemonic2fasta2splice(inFile, outpath)
+    print('Downloading proteomes and splice files...{inData}')
+    mnemonic2fasta2splice(inData)
 elif args.tag == 'getgff': ## use directly the infile as mnemonic, so you can parallel
-    print('Downloading gff3...')
-    mnemonic2gff(inFile)
+    print('Downloading gff3...{inData}')
+    mnemonic2gff(inData)
 elif args.tag == 'pep2hog':
     print('Getting hog ids...')
-    pep2hogID(inFile)
+    pep2hogID(inData)
 
 
