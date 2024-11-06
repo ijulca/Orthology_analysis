@@ -23,7 +23,7 @@ import collections
 ### Get similar hogs with shared orthologs
 def get_shared_hogs(hog_id, level=None): ### level of interest or None --> rootlevel for hogid
     if 'HOG:' not in hog_id:
-        hog_id = f'HOG:E0{hog_id}'
+        hog_id = f'HOG:E{str(hog_id).zfill(7)}'
     hog = HOG(db, db.get_hog(hog_id, level=level))
     hog_memb_enrs = [e.entry_nr for e in hog.members]
     all_pw_orth_enr = set()
@@ -50,7 +50,7 @@ def get_shared_hogs(hog_id, level=None): ### level of interest or None --> rootl
 ### Get the fasta file of hogs
 def hog2fasta(hog_id):
     if 'HOG:' in hog_id:
-        hog_id = hog_id.split(':')[1]
+        hog_id = hog_id.split(':E')[1]
     hog_id = int(hog_id)
     with open(f'{hog_id}.fa', 'wt') as fout:
         for p in db.member_of_fam(int(hog_id)): #db.member_of_hog_id(hog): ###use this for full hog name
