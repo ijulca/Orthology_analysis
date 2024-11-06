@@ -22,6 +22,9 @@ import collections
 
 ### Get similar hogs with shared orthologs
 def get_shared_hogs(hog_id, level=None): ### level of interest or None --> rootlevel for hogid
+    if 'HOG:' in hog_id:
+        hog_id = hog_id.split(':')[1]
+    hog_id = int(hog_id)
     hog = HOG(db, db.get_hog(hog_id, level=level))
     hog_memb_enrs = [e.entry_nr for e in hog.members]
     all_pw_orth_enr = set()
