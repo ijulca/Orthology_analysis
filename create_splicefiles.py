@@ -140,7 +140,7 @@ def create_splicefile_unspecific(file, tag):
     with open(file, 'r') as handle, open(tag+'.fa', 'w') as outfile: 
         for seq_record in SeqIO.parse(handle, "fasta"):
             new_name = tag + seq_record.id 
-            gene_id = new_name.split('P')[0]  ### modify this part: .
+            gene_id = '.'.join(new_name.split('.')[:-1])  ### P modify this part: .
             all_splice[gene_id] = all_splice.get(gene_id, [])+[new_name]
             seq_record.id = seq_record.description = new_name
             SeqIO.write(seq_record, outfile, "fasta")
