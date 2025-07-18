@@ -191,16 +191,16 @@ elif args.tag =='hog2shogs':
     print(f"Getting similar hogs...{inData}")
     get_shared_hogs(inData)
 elif args.tag == 'pep2main_iso':
-    print('Downloading main isoforms...{inData}')
+    print(f'Downloading main isoforms...{inData}')
     mnemonic2fasta(inData)
 elif args.tag == 'pep2splice':
-    print('Downloading proteomes and splice files...{inData}')
+    print(f'Downloading proteomes and splice files...{inData}')
     mnemonic2fasta2splice(inData)
 elif args.tag == 'getgff': ## use directly the infile as mnemonic, so you can parallel
-    print('Downloading gff3...{inData}')
+    print(f'Downloading gff3...{inData}')
     mnemonic2gff(inData)
 elif args.tag == 'pep2hog':
-    print('Getting hog ids...')
+    print(f'Getting hog ids...')
     pep2hogID(inData)
 
 
