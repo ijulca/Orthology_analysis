@@ -4,6 +4,7 @@
 Created on Tue Feb  6 19:42:41 2024
 
 @author: ijulcach
+Script to download data from OMA in curnagl
 """
 
 import argparse
