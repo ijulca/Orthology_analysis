@@ -10,7 +10,7 @@ import argparse
 import sys, os
 import glob
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2])+'/modules_py/')
-import general_modules as GM
+import genome_modules as GM
 
 
 def get_species(fastaFiles, tag):
@@ -39,12 +39,12 @@ def read_alignment(fastaFiles, tag):
         seq = GM.load_sequences(file)
         if tag == 'oma':
             seq = {x[:5]:seq[x] for x in seq}
-        if len(seq) != len(species_codes):
-            len_alg = get_len_alg(seq)
+        len_alg = get_len_alg(seq)
         for s in species_codes:
-            if s in algs[s]:
+            if s in seq:
                 algs[s] += ''.join(seq[s])
             else:
+                print(file,'missing',s)
                 algs[s] += '-'*len_alg
     return algs
     
